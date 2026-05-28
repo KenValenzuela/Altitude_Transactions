@@ -1,25 +1,167 @@
-# CODING AGENTS: READ THIS FIRST
+# Altitude — Contract-to-Close for Colorado Brokers
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+Altitude is an AI-assisted transaction coordinator for Colorado residential real
+estate brokers. A broker uploads a signed CTM "Contract to Buy and Sell"
+(CBS) PDF; the system extracts the parties, price terms, and the ~43 statutory
+deadlines; the broker confirms the extraction; Altitude then builds a deadline
+timeline and task checklist and tracks the transaction from under-contract to
+keys.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+This repository is a clean **Next.js + FastAPI** monorepo migrated from an
+earlier single-page design prototype. (The original prototype is preserved — see
+[Prototype & history](#prototype--history).)
 
-## What you should do — IMPORTANT
+```
+altitude/
+├── frontend/          Next.js 15 App Router · React · TypeScript (mobile-first)
+├── backend/           FastAPI · SQLModel · SQLite (Postgres-compatible)
+├── project/           Original design prototype + the real sample contract data
+└── chats/             Original design conversation transcripts (reference)
+```
 
-**Read the chat transcripts first.** There are 2 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+## The core workflow
 
-**Read `project/Altitude.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+```
+Login → Dashboard → Upload PDF → AI Extraction → Review & Confirm
+      → Transaction Workspace (Overview · Checklist · Deadlines · Parties · Documents)
+      → Weekly Summary → Post-close
+```
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+Each step maps to a real route and a real API call. The journey is:
 
-## About the design files
+1. **Upload** a contract PDF → `POST /api/documents/upload` (file is stored, an
+   extraction job is created).
+2. **Extraction** runs as a job → `GET /api/documents/{id}/extraction` (polled).
+3. **Review** the extracted fields, deadlines, and conditional flags, then
+   confirm → `POST /api/extractions/{jobId}/confirm` builds the transaction
+   (human-in-the-loop: nothing is committed until the broker confirms).
+4. **Workspace** screens read `GET /api/transactions/{id}` and mutate task /
+   document state via `PATCH /api/tasks/{id}` and `PATCH /api/documents/{id}`.
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+## Running locally
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+You need two terminals. **Start the backend first** (the frontend calls it).
 
-## Bundle contents
+### Backend — FastAPI (port 8000)
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `alt` project files (HTML prototypes, assets, components)
+```bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+uvicorn app.main:app --reload --port 8000
+```
+
+- API root: `http://localhost:8000/api`
+- Interactive docs: `http://localhost:8000/docs`
+- Health: `http://localhost:8000/api/health`
+- On first start the DB is seeded with a demo broker and one fully-built demo
+  transaction (the Cherry Springs contract), so the dashboard is non-empty.
+
+### Frontend — Next.js (port 3000)
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local   # optional; defaults already point at :8000
+npm run dev
+```
+
+Open `http://localhost:3000` → you land on `/login`. Click **Continue** to
+establish a (stubbed) session and reach the dashboard.
+
+## Environment variables
+
+| Where | Variable | Default | Purpose |
+|-------|----------|---------|---------|
+| frontend | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000/api` | Backend base URL |
+| backend | `DATABASE_URL` | `sqlite:///./altitude.db` | DB connection (swap for Postgres) |
+| backend | `FRONTEND_ORIGIN` | `http://localhost:3000` | CORS allow-origin |
+| backend | `APP_VERSION` | `0.1.0` | Reported by `/api/health` |
+
+## What is real vs. mocked
+
+**Real:**
+- Frontend ↔ backend separation, typed API client, all UX states (loading /
+  error / empty), routing, and the full upload → extract → confirm → workspace loop.
+- Database persistence (SQLModel/SQLite), file upload + on-disk storage.
+- Deadline & checklist derivation from the extraction (N/A skipped, `MM/DD/YYYY`
+  parsed, `COMPLETED` handled, critical deadlines flagged urgent).
+- Task & document state mutations persist.
+- The weekly **Summary** is *derived* from the live transaction, not faked.
+
+**Mocked (clearly bounded, swappable):**
+- **AI extraction.** `MockExtractionService` does **not** parse uploaded PDF
+  bytes — it replays a real, structured CTM CBS1-8-24 extraction
+  (`backend/app/services/data/`). The upload, job lifecycle, and review flow are
+  real; only the parser is stubbed. Swap it behind the `ExtractionService`
+  interface when a real parser is ready.
+- **Auth.** `get_current_user` returns the seeded broker and
+  `POST /api/auth/session` returns a fixed token. The dependency is real-shaped
+  so it can be replaced with real auth without touching call sites.
+- **Frontend fixtures.** `frontend/src/lib/fixtures.ts` holds typed demo data
+  (in the exact API shape) used **only** by the `/walkthrough` route and as
+  offline fallbacks. It is never sent anywhere and is separate from the API client.
+
+## Architecture notes
+
+**Frontend** (`frontend/src/`)
+- `app/` — App Router routes (one per workflow step).
+- `components/ui/` — preserved design-system primitives (Button, TopBar, badges,
+  StageRail, etc.) + `AppShell` (mobile-first container) and `States` (loading/error/empty).
+- `components/screens/` — the 12 screens, refactored to be **prop-driven** with
+  fixture fallbacks.
+- `types/api.ts` — the API contract (single source of truth for wire types).
+- `lib/api-client.ts` — the only place that calls `fetch`.
+- `hooks/useApi.ts` — generic data-fetching with loading/error/refresh.
+- `lib/navigation.ts` — maps screen ids → real routes.
+
+**Backend** (`backend/app/`)
+- `api/routes/` — modular routers (auth, transactions, documents, extractions, tasks).
+- `schemas/` — Pydantic `CamelModel` request/response models (camelCase JSON).
+- `models/` — SQLModel tables (string-UUID PKs, status enums; Postgres-ready).
+- `services/` — `extraction_service`, `document_service`, `transaction_service`,
+  `deadline_service`, `task_service` (real service boundaries).
+- `db/seed.py` — idempotent demo seed.
+
+The design tokens (`frontend/src/app/globals.css`) — color/typography/spacing
+scales, dark theme, accent theming, status colors, urgency indicators — are
+preserved from the prototype and remain the design system.
+
+## Tests
+
+```bash
+cd backend && pytest          # 11 tests: health, seed, full upload→extract→confirm, error paths
+cd frontend && npm run build  # typecheck + production build
+```
+
+## Remaining technical debt & known limitations
+
+- **Extraction is mocked** — it always returns the sample contract regardless of
+  the uploaded file. This is the next real implementation target.
+- **Auth is stubbed** — single demo broker, no real sessions or org scoping.
+- **Inline styles** — screens still use inline `style={{}}` (preserved from the
+  prototype). A future pass could extract these to CSS modules / a styled system.
+- **No optimistic-refresh on cross-screen counts** — workspace counts refresh on
+  navigation, not live, after task/document mutations.
+- **SQLite is ephemeral** in cloud/container runs; point `DATABASE_URL` at
+  Postgres for persistence.
+- **`daysToClose` can be negative** for the seeded transaction because the sample
+  contract's close date is in the past — this faithfully reflects the sample data.
+
+## Recommended next tasks
+
+1. Implement a real PDF extraction parser behind `ExtractionService`.
+2. Real authentication + organization/broker scoping on every query.
+3. Field-level editing in the Review screen (currently confirm-only).
+4. Persist + display notes / activity log per transaction.
+5. Move inline styles into the design-system layer; add component tests.
+6. Make workspace mutations refresh dependent views live.
+
+## Prototype & history
+
+The original design prototype is preserved and runnable at **`/walkthrough`** — a
+12-screen, phone-framed demo with a "Tweaks" panel, useful for stakeholder
+walk-throughs. Its source intent lives in `project/` and `chats/`. The single
+most valuable historical asset is
+`project/uploads/altitude_contract_metadata_extraction.json` — the real CTM
+contract extraction that defines the domain model and feeds the mock extractor.

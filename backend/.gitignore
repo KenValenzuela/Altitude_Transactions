@@ -1,0 +1,14 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Local DB and uploaded files
+altitude.db
+uploads/*
+!uploads/.gitkeep
+
+# Env
+.env
