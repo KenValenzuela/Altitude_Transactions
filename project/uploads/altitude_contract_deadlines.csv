@@ -1,0 +1,46 @@
+item_no,category,reference,event,value
+1,General,§ 3,Time of Day Deadline,7:00 PM MT
+2,General,§ 4,Alternative Earnest Money Deadline,10/28/2025
+3,Title,§ 8,Record Title Deadline (and Tax Certificate),11/3/2025
+4,Title,§ 8,Record Title Objection Deadline,11/5/2025
+5,Title,§ 8,Off-Record Title Deadline,11/3/2025
+6,Title,§ 8,Off-Record Title Objection Deadline,11/5/2025
+7,Title,§ 8,Title Resolution Deadline,11/7/2025
+8,Title,§ 8,Third Party Right to Purchase/Approve Deadline,N/A
+9,Owners Association,§ 7,Association Documents Deadline,11/3/2025
+10,Owners Association,§ 7,Association Documents Termination Deadline,11/5/2025
+11,Seller Disclosures,§ 10,Seller’s Property Disclosure Deadline,10/24/2025
+12,Seller Disclosures,§ 10,Lead-Based Paint Disclosure Deadline,N/A
+13,Loan and Credit,§ 5,New Loan Application Deadline,COMPLETED
+14,Loan and Credit,§ 5,New Loan Terms Deadline,11/7/2025
+15,Loan and Credit,§ 5,New Loan Availability Deadline,11/14/2025
+16,Loan and Credit,§ 5,Buyer’s Credit Information Deadline,N/A
+17,Loan and Credit,§ 5,Disapproval of Buyer’s Credit Information Deadline,N/A
+18,Loan and Credit,§ 5,Existing Loan Deadline,N/A
+19,Loan and Credit,§ 5,Existing Loan Termination Deadline,N/A
+20,Loan and Credit,§ 5,Loan Transfer Approval Deadline,N/A
+21,Loan and Credit,§ 4,Seller or Private Financing Deadline,N/A
+22,Appraisal,§ 6,Appraisal Deadline,11/10/2025
+23,Appraisal,§ 6,Appraisal Objection Deadline,11/12/2025
+24,Appraisal,§ 6,Appraisal Resolution Deadline,11/13/2025
+25,Survey,§ 9,New ILC or New Survey Deadline,11/10/2025
+26,Survey,§ 9,New ILC or New Survey Objection Deadline,11/12/2025
+27,Survey,§ 9,New ILC or New Survey Resolution Deadline,11/13/2025
+28,Inspection and Due Diligence,§ 2,Water Rights Examination Deadline,N/A
+29,Inspection and Due Diligence,§ 8,Mineral Rights Examination Deadline,N/A
+30,Inspection and Due Diligence,§ 10,Inspection Termination Deadline,10/29/2025
+31,Inspection and Due Diligence,§ 10,Inspection Objection Deadline,10/29/2025
+32,Inspection and Due Diligence,§ 10,Inspection Resolution Deadline,10/31/2025
+33,Inspection and Due Diligence,§ 10,Property Insurance Termination Deadline,11/7/2025
+34,Inspection and Due Diligence,§ 10,Due Diligence Documents Delivery Deadline,11/3/2025
+35,Inspection and Due Diligence,§ 10,Due Diligence Documents Objection Deadline,11/5/2025
+36,Inspection and Due Diligence,§ 10,Due Diligence Documents Resolution Deadline,11/7/2025
+37,Inspection and Due Diligence,§ 10,Conditional Sale Deadline,N/A
+38,Inspection and Due Diligence,§ 10,Lead-Based Paint Termination Deadline,N/A
+39,Closing and Possession,§ 12,Closing Date,11/20/2025
+40,Closing and Possession,§ 17,Possession Date,11/20/2025
+41,Closing and Possession,§ 17,Possession Time,Time of Closing/Funding
+42,Closing and Possession,§ 27,Acceptance Deadline Date,10/21/2025
+43,Closing and Possession,§ 27,Acceptance Deadline Time,7:00 PM MT
+44,N/A,N/A,N/A,N/A
+45,N/A,N/A,N/A,N/A

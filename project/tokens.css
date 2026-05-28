@@ -1,0 +1,221 @@
+/* Altitude — design tokens
+   Premium real-estate operations cockpit. Navy + metallic gold on clean cool
+   neutrals, calm 60/20/10/10 split (neutral 60 · navy 20 · gold 10 · status 10).
+   Two typefaces only: Instrument Serif (display) + Geist (everything else). */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* ── 60% — Surfaces & neutrals (clean, faintly cool white) ── */
+  --bone:        #F2F4F7;   /* canvas */
+  --paper:       #FFFFFF;   /* card surface */
+  --paper-2:     #ECEFF4;   /* recessed surface */
+  --line:        #E3E7EE;   /* hairlines */
+  --line-strong: #C9D1DC;
+
+  /* Ink — navy-tinted slate */
+  --ink:         #14223F;   /* primary text + primary action */
+  --ink-2:       #38445C;   /* secondary */
+  --ink-3:       #6B7488;   /* tertiary, captions */
+  --ink-4:       #9AA1B0;   /* placeholder */
+
+  /* ── 20% — Brand navy (token names kept as --sage* for compatibility) ── */
+  --sage:        #1E3A66;   /* brand navy — links, icons, active */
+  --sage-deep:   #14223F;   /* deep navy — headings on tint */
+  --sage-soft:   #D6DFEC;   /* tinted fill (e.g. Complete badge) */
+  --sage-tint:   #EAF0F8;   /* light navy wash */
+
+  /* Metallic gold gradient for the logo / brand moments only */
+  --gold-metallic: linear-gradient(150deg, #E7CB7E 0%, #C9A14A 40%, #9C7726 78%, #D8B968 100%);
+
+  /* ── 10% gold + 10% status palette ── */
+  --clay:        #B0493B;   /* warn / overdue */
+  --clay-soft:   #F3DCD6;
+  --gold:        #B8862F;   /* muted gold — in-progress / accent */
+  --gold-soft:   #F4E8CC;
+  --slate:       #5C6B82;   /* not started */
+  --slate-soft:  #DEE3EC;
+  --na:          #9AA1B0;   /* n/a — dim */
+  --na-soft:     #E8EBF0;
+
+  /* Type — two families only */
+  --f-display: "Instrument Serif", "Cormorant", Georgia, serif;
+  --f-sans:    "Geist", -apple-system, "SF Pro Text", system-ui, sans-serif;
+  --f-mono:    "Geist", -apple-system, system-ui, sans-serif; /* "mono" role → Geist + tnum */
+
+  /* Radii */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  /* Shadows — cool navy-tinted */
+  --sh-1: 0 1px 0 rgba(20,34,63,.04), 0 1px 2px rgba(20,34,63,.05);
+  --sh-2: 0 2px 4px rgba(20,34,63,.05), 0 8px 24px rgba(20,34,63,.07);
+  --sh-3: 0 30px 70px rgba(20,34,63,.20), 0 0 0 1px rgba(20,34,63,.08);
+}
+
+/* ── Accent remap (the Tweaks "Accent" control writes the hex to data-accent).
+   Navy #1E3A66 is the :root default and needs no override. ── */
+[data-accent="#27518F"] {            /* Royal */
+  --sage:      #27518F;
+  --sage-deep: #18335C;
+  --sage-soft: #D5E0F1;
+  --sage-tint: #E9F0FB;
+}
+[data-accent="#9C7726"] {            /* Gold */
+  --sage:      #9C7726;
+  --sage-deep: #6E5318;
+  --sage-soft: #F0E3C2;
+  --sage-tint: #F7EFD8;
+}
+[data-accent="#4A586E"] {            /* Slate */
+  --sage:      #4A586E;
+  --sage-deep: #303B4C;
+  --sage-soft: #DCE1EA;
+  --sage-tint: #EDEFF4;
+}
+
+/* Dark theme overrides */
+[data-theme="dark"] {
+  --bone:        #0E1626;
+  --paper:       #16203A;   /* navy card */
+  --paper-2:     #111A30;
+  --line:        #243150;
+  --line-strong: #364668;
+  --ink:         #EDF1F7;
+  --ink-2:       #C2CADB;
+  --ink-3:       #8B95AC;
+  --ink-4:       #646E86;
+  --sage:        #6E97D6;
+  --sage-deep:   #A9C3EC;
+  --sage-soft:   #1E3157;
+  --sage-tint:   #182646;
+  --clay-soft:   #3A211D;
+  --gold-soft:   #382C16;
+  --slate-soft:  #232E45;
+  --na-soft:     #1E2840;
+}
+
+/* Density */
+[data-density="compact"]  { --row-h: 48px; --pad: 12px; --gap: 10px; }
+[data-density="regular"]  { --row-h: 56px; --pad: 16px; --gap: 14px; }
+[data-density="comfy"]    { --row-h: 64px; --pad: 20px; --gap: 18px; }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: var(--f-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Reusable atoms */
+
+.alt-display {
+  font-family: var(--f-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.02;
+}
+
+.alt-mono {
+  font-family: var(--f-mono);
+  font-feature-settings: "tnum";
+  letter-spacing: 0.02em;
+}
+
+.alt-eyebrow {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+
+.alt-card {
+  background: var(--paper);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+}
+
+.alt-hairline { border-top: 1px solid var(--line); }
+
+.alt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--f-sans);
+  letter-spacing: 0.01em;
+}
+
+.alt-tap {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  cursor: pointer;
+  transition: background-color .14s, transform .12s, color .14s;
+}
+.alt-tap:active { transform: scale(.985); }
+
+/* Topographic background pattern — subtle altitude nod (navy) */
+.alt-topo {
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% 40%, rgba(30,58,102,.08), transparent 70%),
+    repeating-radial-gradient(circle at 28% 58%, transparent 0, transparent 24px, rgba(30,58,102,.05) 24px, rgba(30,58,102,.05) 25px),
+    repeating-radial-gradient(circle at 72% 36%, transparent 0, transparent 28px, rgba(30,58,102,.04) 28px, rgba(30,58,102,.04) 29px);
+}
+
+/* AI shimmer */
+@keyframes alt-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.alt-shimmer {
+  background: linear-gradient(90deg,
+    transparent 30%,
+    rgba(30,58,102,.16) 50%,
+    transparent 70%);
+  background-size: 200% 100%;
+  animation: alt-shimmer 1.8s ease-in-out infinite;
+}
+
+/* Soft pulse for live indicators */
+@keyframes alt-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .55; transform: scale(.9); }
+}
+.alt-pulse { animation: alt-pulse 1.8s ease-in-out infinite; }
+
+/* Scrollbar */
+.alt-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.alt-scroll::-webkit-scrollbar-thumb { background: rgba(20,34,63,.14); border-radius: 4px; }
+.alt-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* Phone shell utilities */
+.alt-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bone);
+  color: var(--ink);
+}
+.alt-screen-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+button { font-family: inherit; color: inherit; }
+input, textarea { font-family: inherit; color: inherit; }
