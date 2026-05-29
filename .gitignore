@@ -1,15 +1,28 @@
-# dependencies
+# --- Node / Next.js (frontend) ---
 node_modules/
-
-# Next.js build output
 .next/
 out/
+*.tsbuildinfo
+next-env.d.ts
 
-# env files
+# --- Python (backend) ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# --- Local data & uploads (never commit) ---
+*.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# --- Env files ---
 .env
 .env.local
 .env.*.local
 
-# misc
+# --- misc ---
 .DS_Store
 *.pem
