@@ -1,2 +1,22 @@
-import type { AuditEvent } from '@/types/domain';
-export function AuditTimeline({events}:{events:AuditEvent[]}){return <ol className="audit-timeline">{events.map(e=><li key={e.id}><strong>{e.eventType.replaceAll('_',' ')}</strong><span>{new Date(e.createdAt).toLocaleString()}</span><p>{e.entityType} {e.afterValue?`→ ${e.afterValue}`:''}</p></li>)}</ol>}
+import type { ActivityLogItem } from '@/types/domain';
+
+export function AuditTimeline({ events }: { events: ActivityLogItem[] }) {
+  if (!events.length) {
+    return <p className="muted">No activity has been recorded yet.</p>;
+  }
+
+  return (
+    <ol className="audit-timeline" aria-label="Transaction activity log">
+      {events.map((event) => (
+        <li key={event.id}>
+          <strong>{event.eventType.replaceAll('_', ' ')}</strong>
+          <time dateTime={event.createdAt}>{new Date(event.createdAt).toLocaleString()}</time>
+          <p>
+            {event.entityType}
+            {event.afterValue ? ` → ${event.afterValue}` : ''}
+          </p>
+        </li>
+      ))}
+    </ol>
+  );
+}

@@ -1,2 +1,23 @@
-import type { Deadline } from '@/types/domain';import { DeadlineBadge } from './DeadlineBadge';
-export function DeadlineList({deadlines}:{deadlines:Deadline[]}){return <div className="list-stack">{deadlines.map(d=><article className="ops-row" key={d.id}><div><strong>{d.eventName||d.event}</strong><p>{d.sectionReference} · {d.sourceSection}</p></div><span>{d.dueDate||d.dueTime||d.rawValue}</span><DeadlineBadge deadline={d}/></article>)}</div>}
+import type { Deadline } from '@/types/domain';
+import { DeadlineBadge } from './DeadlineBadge';
+
+export function DeadlineList({ deadlines }: { deadlines: Deadline[] }) {
+  if (!deadlines.length) {
+    return <p className="muted">No deadlines have been generated yet.</p>;
+  }
+
+  return (
+    <ul className="list-stack" aria-label="Transaction deadlines">
+      {deadlines.map((deadline) => (
+        <li className="ops-row" key={deadline.id}>
+          <div>
+            <strong>{deadline.eventName || deadline.event}</strong>
+            <p>{[deadline.sectionReference, deadline.sourceSection].filter(Boolean).join(' · ') || 'Source pending'}</p>
+          </div>
+          <time>{deadline.dueDate || deadline.dueTime || deadline.rawValue || 'Date pending'}</time>
+          <DeadlineBadge deadline={deadline} />
+        </li>
+      ))}
+    </ul>
+  );
+}

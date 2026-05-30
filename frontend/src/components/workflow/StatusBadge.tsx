@@ -1,1 +1,5 @@
-export function StatusBadge({label,tone='neutral'}:{label:string;tone?:'neutral'|'success'|'warning'|'danger'|'gold'}){return <span className={`status-badge ${tone}`}>{label.replaceAll('_',' ')}</span>}
+type StatusTone = 'neutral' | 'success' | 'warning' | 'danger' | 'gold';
+
+export function StatusBadge({ label, tone = 'neutral' }: { label: string; tone?: StatusTone }) {
+  return <span className={`status-badge ${tone}`}>{label.replaceAll('_', ' ')}</span>;
+}

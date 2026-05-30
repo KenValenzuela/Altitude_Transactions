@@ -66,8 +66,7 @@ cp .env.example .env.local   # optional; defaults already point at :8000
 npm run dev
 ```
 
-Open `http://localhost:3000` → you land on `/login`. Click **Continue** to
-establish a (stubbed) session and reach the dashboard.
+Open `http://localhost:3000` → you land on `/dashboard`. If you use `/login`, click **Continue** to establish a stubbed session and reach the dashboard.
 
 ## Environment variables
 
@@ -104,14 +103,27 @@ establish a (stubbed) session and reach the dashboard.
 
 ## Architecture notes
 
+### UX and design-system upgrade
+
+The operational workflow has been upgraded around semantic landmarks, mobile-first responsive layouts, accessible focus states, labeled upload controls, table captions, typed status badges, reusable page/section headers, and explicit loading/error/empty states. The current audit and migration plan live in `docs/UX_UI_ACCESSIBILITY_AUDIT.md`; API contracts and mock boundaries live in `docs/API_CONTRACTS.md`.
+
+Design-system rules now follow these practical tokens and patterns:
+
+- **Color:** neutral operational surfaces, navy primary actions, gold deadline emphasis, green success, amber warning, red danger.
+- **Typography:** large page titles for orientation, uppercase eyebrows for metadata, compact readable body text for dense workflows.
+- **Spacing/radius/elevation:** card-based sections with consistent 1rem rhythm, rounded operational cards, restrained shadows.
+- **Buttons/forms:** 44px minimum targets, visible disabled states, clear primary/secondary variants, labeled file input with helper and live status text.
+- **Data display:** metric cards for summaries, list semantics for generated tasks/deadlines/documents, scrollable tables with captions for review data.
+- **Responsive behavior:** mobile stacks by default, tablet/desktop split grids, bottom mobile navigation, sidebar on desktop, no intentional horizontal overflow except labeled table regions.
+
+## Architecture notes
+
 **Frontend** (`frontend/src/`)
 - `app/` — App Router routes (one per workflow step).
-- `components/ui/` — preserved design-system primitives (Button, TopBar, badges,
-  StageRail, etc.) + `AppShell` (mobile-first container) and `States` (loading/error/empty).
-- `components/screens/` — the 12 screens, refactored to be **prop-driven** with
-  fixture fallbacks.
-- `types/api.ts` — the API contract (single source of truth for wire types).
-- `lib/api-client.ts` — the only place that calls `fetch`.
+- `components/workflow/` — production workflow primitives and feature components (`AppShell`, page/section headers, cards, buttons, states, review table, upload, task/deadline/document/activity components).
+- `components/ui/` and `components/screens/` — preserved prototype-era components used by legacy/demo routes.
+- `types/domain.ts` and `types/api.ts` — centralized domain and API contracts without frontend `any` types.
+- `lib/api-client.ts` — the only production workflow layer that calls `fetch`.
 - `hooks/useApi.ts` — generic data-fetching with loading/error/refresh.
 - `lib/navigation.ts` — maps screen ids → real routes.
 
@@ -139,8 +151,7 @@ cd frontend && npm run build  # typecheck + production build
 - **Extraction is mocked** — it always returns the sample contract regardless of
   the uploaded file. This is the next real implementation target.
 - **Auth is stubbed** — single demo broker, no real sessions or org scoping.
-- **Inline styles** — screens still use inline `style={{}}` (preserved from the
-  prototype). A future pass could extract these to CSS modules / a styled system.
+- **Prototype inline styles** — preserved prototype-era screens still use inline `style={{}}`; production workflow screens now use shared operational CSS/components.
 - **No optimistic-refresh on cross-screen counts** — workspace counts refresh on
   navigation, not live, after task/document mutations.
 - **SQLite is ephemeral** in cloud/container runs; point `DATABASE_URL` at
@@ -152,7 +163,7 @@ cd frontend && npm run build  # typecheck + production build
 
 1. Implement a real PDF extraction parser behind `ExtractionService`.
 2. Real authentication + organization/broker scoping on every query.
-3. Field-level editing in the Review screen (currently confirm-only).
+3. Field-level editing in the Review screen UI (the API supports edits; the upgraded UI currently approves values and documents editing as a next task).
 4. Persist + display notes / activity log per transaction.
 5. Move inline styles into the design-system layer; add component tests.
 6. Make workspace mutations refresh dependent views live.

@@ -1,17 +1,38 @@
 export * from './domain';
-export type ApiUser = { id:string; name:string; email:string; brokerage?:string; licenseNo?:string };
+
+import type {
+  Contact,
+  PartyRole,
+  DocumentRequirement,
+  ExtractedField,
+  ExtractionJob,
+  SourceDocument,
+  Task,
+  TaskStatus,
+  Transaction,
+  TransactionCard,
+} from './domain';
+
+export type ApiUser = {
+  id: string;
+  name: string;
+  email: string;
+  brokerage?: string;
+  licenseNo?: string;
+};
+
 export type SessionResponse = { user: ApiUser; token: string };
-export type ConfirmExtractionRequest = { overrides?: Record<string,string>; transactionId?: string };
-export type TransactionDetail = import('./domain').Transaction & Record<string, any>;
-export type TransactionCard = import('./domain').TransactionCard;
-export type ExtractionJob = import('./domain').ExtractionJob & Record<string, any>;
-export type ExtractedField = import('./domain').ExtractedField & Record<string, any>;
-export type ApiDeadline = Partial<import('./domain').Deadline> & Record<string, any>;
-export type ApiTask = Partial<import('./domain').Task> & Record<string, any>;
-export type ApiTaskGroup = { group:string; items: ApiTask[] };
-export type ApiDocument = Partial<import('./domain').DocumentRequirement> & Record<string, any>;
-export type ApiDocumentState = 'received'|'pending'|'upcoming'|'na'|'reviewed'|'approved'|'missing';
-export type TaskState = 'not_started'|'in_progress'|'complete'|'not_applicable'|'todo'|'doing'|'done'|'na';
-export type ApiProperty = { id:string; type?:string; beds?:number; baths?:number; sqft?:number; mls?:string; isRural:boolean; hasHoa:boolean };
-export type ApiParty = Record<string, any>;
-export type ApiStage = { id:string; label:string; day?:number; done:boolean; current?:boolean };
+export type ConfirmExtractionRequest = { overrides?: Record<string, string>; transactionId?: string };
+export type TransactionDetail = Transaction;
+export type ApiTransactionCard = TransactionCard;
+export type ApiExtractionJob = ExtractionJob;
+export type ApiExtractedField = ExtractedField;
+export type ApiDeadline = import('./domain').Deadline;
+export type ApiTask = Task;
+export type ApiTaskGroup = { group: string; items: ApiTask[] };
+export type ApiDocument = DocumentRequirement | SourceDocument;
+export type ApiDocumentState = 'received' | 'pending' | 'upcoming' | 'na' | 'reviewed' | 'approved' | 'missing';
+export type TaskState = TaskStatus;
+export type ApiProperty = { id: string; type?: string; beds?: number; baths?: number; sqft?: number; mls?: string; isRural: boolean; hasHoa: boolean };
+export type ApiParty = Contact & { role: PartyRole };
+export type ApiStage = { id: string; label: string; day?: number; done: boolean; current?: boolean };
