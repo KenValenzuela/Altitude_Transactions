@@ -1,0 +1,2 @@
+import { StatusBadge } from './StatusBadge';import type { Deadline } from '@/types/domain';
+export function DeadlineBadge({deadline}:{deadline:Deadline}){return <StatusBadge label={deadline.applicability==='not_applicable'?'N/A':deadline.applicability==='completed'?'Complete':'Open'} tone={deadline.applicability==='completed'?'success':deadline.applicability==='not_applicable'?'neutral':'warning'}/>}

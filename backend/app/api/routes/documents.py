@@ -1,106 +1,46 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.api.deps import get_current_user, get_session
-from app.models import Document, DocumentState, ExtractedField, ExtractionJob, User
-from app.schemas import (
-    DocumentOut,
-    DocumentPatch,
-    ExtractedFieldOut,
-    ExtractionDeadline,
-    ExtractionFlag,
-    ExtractionJobOut,
-    UploadOut,
-)
-from app.services import document_service
-from app.services.document_service import PDF_CONTENT_TYPES
-from app.services.extraction_service import get_extraction_service
+from app.models import DocumentRequirement, ReceivedStatus, SourceDocument, User
+from app.schemas import DocumentPatch, DocumentRequirementOut, UploadOut
+from app.services.demo_workflow import create_source_document
 
+PDF_CONTENT_TYPES = {"application/pdf", "application/x-pdf"}
 router = APIRouter(prefix="/documents", tags=["documents"])
 
-
 @router.post("/upload", response_model=UploadOut)
-async def upload_document(
-    file: UploadFile = File(...),
-    transactionId: str | None = Form(default=None),  # noqa: N803 - camelCase form field
-    user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
-) -> UploadOut:
+async def upload_document(file: UploadFile = File(...), transactionId: str | None = Form(default=None), user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     if file.content_type not in PDF_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Only PDF uploads are supported (got {file.content_type})",
-        )
-    data = await file.read()
-    document, job = document_service.save_upload(
-        session,
-        filename=file.filename or "upload.pdf",
-        content_type=file.content_type,
-        data=data,
-        transaction_id=transactionId,
-    )
-    return UploadOut(document_id=document.id, status="uploaded", extraction_job_id=job.id)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Only PDF uploads are supported (got {file.content_type})")
+    doc, run = create_source_document(session, user, file.filename or "contract.pdf", file.content_type or "application/pdf", await file.read(), transactionId)
+    return UploadOut(document_id=doc.id, status="uploaded", extraction_job_id=run.id, transaction_id=doc.transaction_id)
 
+@router.patch("/{document_id}", response_model=DocumentRequirementOut)
+def patch_document(document_id: str, patch: DocumentPatch, user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    req = session.get(DocumentRequirement, document_id)
+    if not req:
+        # compatibility: allow patching source document and return a pseudo requirement
+        src = session.get(SourceDocument, document_id)
+        if not src: raise HTTPException(status_code=404, detail="Document not found")
+        return DocumentRequirementOut.model_validate({"id": src.id, "transaction_id": src.transaction_id or "", "document_name": src.filename, "category": src.document_type, "required_status": "required", "received_status": "received", "created_at": src.uploaded_at, "updated_at": src.uploaded_at, "name": src.filename, "state": "received", "source": src.document_type})
+    value = patch.received_status or patch.state
+    state_map = {"pending":"missing", "received":"received", "reviewed":"reviewed", "approved":"approved", "na":"missing"}
+    try: req.received_status = ReceivedStatus(state_map.get(value or "", value or ""))
+    except ValueError: raise HTTPException(status_code=400, detail=f"Invalid document state '{value}'")
+    session.add(req); session.commit(); session.refresh(req)
+    return DocumentRequirementOut.model_validate({**req.model_dump(), "name": req.document_name, "source": req.category, "state": patch.state or req.received_status.value})
+
+from sqlmodel import select
+from app.models import ExtractionRun, ExtractedField, Deadline
+from app.schemas import ExtractionJobOut, ExtractedFieldOut, ExtractionFlag
+from app.services.transaction_service import _deadline_out
 
 @router.get("/{document_id}/extraction", response_model=ExtractionJobOut)
-def get_extraction(
-    document_id: str,
-    user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
-) -> ExtractionJobOut:
-    job = session.exec(
-        select(ExtractionJob).where(ExtractionJob.document_id == document_id)
-    ).first()
-    if job is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extraction job not found")
-
-    fields = session.exec(
-        select(ExtractedField).where(ExtractedField.job_id == job.id)
-    ).all()
-
-    # Deadlines + flags come from the (mocked) extraction result so the review
-    # screen can show them alongside the stored fields.
-    result = get_extraction_service().extract(None)
-    deadlines = [
-        ExtractionDeadline(
-            event=d.event,
-            reference=d.reference,
-            category=d.category,
-            date=d.date,
-            raw_value=d.raw_value,
-            is_na=d.is_na,
-        )
-        for d in result.deadlines
-    ]
-    flags = [ExtractionFlag(title=f.title, detail=f.detail) for f in result.flags]
-
-    return ExtractionJobOut(
-        id=job.id,
-        status=job.status.value,
-        fields=[ExtractedFieldOut.model_validate(f) for f in fields],
-        deadlines=deadlines,
-        flags=flags,
-    )
-
-
-@router.patch("/{document_id}", response_model=DocumentOut)
-def patch_document(
-    document_id: str,
-    patch: DocumentPatch,
-    user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
-) -> DocumentOut:
-    doc = session.get(Document, document_id)
-    if doc is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-    try:
-        doc.state = DocumentState(patch.state)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid document state '{patch.state}'",
-        )
-    session.add(doc)
-    session.commit()
-    session.refresh(doc)
-    return DocumentOut.model_validate(doc)
+def get_document_extraction(document_id: str, user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    run = session.exec(select(ExtractionRun).where(ExtractionRun.source_document_id == document_id)).first()
+    if run is None:
+        raise HTTPException(status_code=404, detail="Extraction job not found")
+    fields = session.exec(select(ExtractedField).where(ExtractedField.extraction_run_id == run.id)).all()
+    deadlines = session.exec(select(Deadline).where(Deadline.transaction_id == run.transaction_id)).all() if run.transaction_id else []
+    return ExtractionJobOut(id=run.id, status="complete" if run.status.value == "needs_review" else run.status.value, progress_percent=run.progress_percent, transaction_id=run.transaction_id, source_document_id=run.source_document_id, fields=[ExtractedFieldOut.model_validate({**f.model_dump(), "category": f.source_section}) for f in fields], deadlines=[_deadline_out(d) for d in deadlines], flags=[ExtractionFlag(title="Additional Provision §30", detail="Additional provisions detected and preserved for broker review.")])

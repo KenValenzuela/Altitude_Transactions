@@ -1,0 +1,2 @@
+import type { Deadline } from '@/types/domain';import { DeadlineBadge } from './DeadlineBadge';
+export function DeadlineList({deadlines}:{deadlines:Deadline[]}){return <div className="list-stack">{deadlines.map(d=><article className="ops-row" key={d.id}><div><strong>{d.eventName||d.event}</strong><p>{d.sectionReference} · {d.sourceSection}</p></div><span>{d.dueDate||d.dueTime||d.rawValue}</span><DeadlineBadge deadline={d}/></article>)}</div>}

@@ -1,0 +1,2 @@
+import Link from 'next/link';import type { TransactionCard as CardType } from '@/types/domain';import { StatusBadge } from './StatusBadge';
+export function TransactionCard({transaction}:{transaction:CardType}){return <Link className="transaction-card ops-card" href={`/transactions/${transaction.id}`}><div><p className="eyebrow">{transaction.city}</p><h3>{transaction.address}</h3><p>{transaction.next}</p></div><StatusBadge label={transaction.stage} tone="gold"/><progress value={transaction.progress} max={1}/></Link>}

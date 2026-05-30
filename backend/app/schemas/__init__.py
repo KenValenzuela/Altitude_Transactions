@@ -1,28 +1,14 @@
-"""API contract schemas. All JSON is camelCase.
-
-Internal models use snake_case; these CamelModel-based schemas expose the
-camelCase aliases the frontend consumes. populate_by_name=True lets us build
-them from snake_case attributes too.
-"""
+"""Pydantic API schemas for the Altitude CTME workflow."""
 from __future__ import annotations
 
-import datetime as _dt
+import datetime as dt
 
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
 
 class CamelModel(BaseModel):
-    """Base schema: serialize/deserialize using camelCase aliases."""
-
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        from_attributes=True,
-    )
-
-
-# --- Auth / User -----------------------------------------------------------
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)
 
 
 class UserOut(CamelModel):
@@ -38,78 +24,95 @@ class SessionOut(CamelModel):
     token: str
 
 
-# --- Dashboard cards -------------------------------------------------------
-
-
-class TransactionCard(CamelModel):
+class SourceDocumentOut(CamelModel):
     id: str
-    address: str
-    city: str
-    stage: str          # human label of status
-    status: str         # raw enum value
-    days_to_close: int
-    progress: float     # 0..1 from task completion
-    next: str
-    urgent: bool
-    parties: str        # e.g. "Okafor · Hayes"
-    price: int
-    active: bool
+    transaction_id: str | None = None
+    filename: str
+    document_type: str
+    mime_type: str | None = None
+    file_size_bytes: int | None = None
+    storage_path: str | None = None
+    sha256_hash: str | None = None
+    uploaded_by: str | None = None
+    uploaded_at: dt.datetime
 
 
-# --- Transaction detail ----------------------------------------------------
-
-
-class PropertyOut(CamelModel):
+class ExtractionRunOut(CamelModel):
     id: str
-    type: str | None = None
-    beds: int | None = None
-    baths: float | None = None
-    sqft: int | None = None
-    mls: str | None = None
-    is_rural: bool = False
-    has_hoa: bool = False
+    transaction_id: str | None = None
+    source_document_id: str
+    status: str
+    started_at: dt.datetime
+    completed_at: dt.datetime | None = None
+    model_name: str
+    schema_version: str
+    error_message: str | None = None
+    progress_percent: int
 
 
-class PartyOut(CamelModel):
+class ExtractedFieldOut(CamelModel):
     id: str
-    role: str
-    name: str
-    sub: str | None = None
-    phone: str | None = None
-    email: str | None = None
-
-
-class StageOut(CamelModel):
-    id: str
+    transaction_id: str | None = None
+    extraction_run_id: str
+    field_key: str
     label: str
-    done: bool
-    current: bool = False
-
-
-class MoneyOut(CamelModel):
-    price: int
-    earnest: int
-    close_date: _dt.date | None = None
-    days_to_close: int
+    value: str | None = None
+    normalized_value: str | None = None
+    source_document_id: str
+    source_page: int | None = None
+    source_section: str | None = None
+    confidence: float
+    population_status: str
+    review_status: str
+    reviewed_by: str | None = None
+    reviewed_at: dt.datetime | None = None
+    created_at: dt.datetime
+    # Legacy-friendly optional field used by old screen grouping.
+    category: str | None = None
 
 
 class DeadlineOut(CamelModel):
     id: str
-    event: str
+    transaction_id: str
+    item_number: str | None = None
+    section_reference: str | None = None
+    event_name: str
+    due_date: dt.date | None = None
+    due_time: str | None = None
+    raw_value: str | None = None
+    applicability: str
+    source_document_id: str
+    source_page: int | None = None
+    source_section: str | None = None
+    linked_task_id: str | None = None
+    created_at: dt.datetime
+    # Legacy aliases preserved for old pages/tests.
+    event: str | None = None
     reference: str | None = None
     category: str | None = None
-    date: _dt.date | None = None
-    raw_value: str | None = None
+    date: dt.date | None = None
     is_urgent: bool = False
     is_na: bool = False
 
 
 class TaskOut(CamelModel):
     id: str
-    group: str
+    transaction_id: str
     title: str
+    category: str
+    status: str
+    due_date: dt.date | None = None
+    completed_at: dt.datetime | None = None
+    assigned_role: str | None = None
+    notes: str | None = None
+    linked_deadline_id: str | None = None
+    source_type: str
+    created_at: dt.datetime
+    updated_at: dt.datetime
+    # Legacy shape.
+    group: str | None = None
     due: str | None = None
-    state: str
+    state: str | None = None
     ai_note: str | None = None
     is_post_close: bool = False
 
@@ -119,14 +122,94 @@ class TaskGroupOut(CamelModel):
     items: list[TaskOut]
 
 
-class DocumentOut(CamelModel):
+class ContactOut(CamelModel):
     id: str
-    name: str
+    transaction_id: str
+    role: str
+    name: str | None = None
+    company: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    license_number: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    required: bool
+    complete: bool
+    source: str
+    created_at: dt.datetime
+    updated_at: dt.datetime
+    sub: str | None = None
+
+
+class DocumentRequirementOut(CamelModel):
+    id: str
+    transaction_id: str
+    document_name: str
+    category: str
+    purpose: str | None = None
+    required_status: str
+    received_status: str
+    source_document_id: str | None = None
+    due_date: dt.date | None = None
+    notes: str | None = None
+    created_at: dt.datetime
+    updated_at: dt.datetime
+    # Legacy document fields.
+    name: str | None = None
     source: str | None = None
-    state: str
+    state: str | None = None
     original_filename: str | None = None
     content_type: str | None = None
     size_bytes: int | None = None
+
+
+class PostCloseTaskOut(CamelModel):
+    id: str
+    transaction_id: str
+    title: str
+    recipient_role: str | None = None
+    status: str
+    date_sent: dt.date | None = None
+    date_completed: dt.date | None = None
+    notes: str | None = None
+    created_at: dt.datetime
+    updated_at: dt.datetime
+
+
+class AuditEventOut(CamelModel):
+    id: str
+    transaction_id: str | None = None
+    actor_type: str
+    actor_id: str | None = None
+    event_type: str
+    entity_type: str
+    entity_id: str | None = None
+    before_value: str | None = None
+    after_value: str | None = None
+    created_at: dt.datetime
+    metadata_json: str | None = None
+
+
+class TransactionCard(CamelModel):
+    id: str
+    address: str
+    city: str
+    stage: str
+    status: str
+    days_to_close: int
+    progress: float
+    next: str
+    urgent: bool
+    parties: str
+    price: int
+    active: bool
+
+
+class MoneyOut(CamelModel):
+    price: int
+    earnest: int
+    close_date: dt.date | None = None
+    days_to_close: int
 
 
 class CountsOut(CamelModel):
@@ -137,28 +220,64 @@ class CountsOut(CamelModel):
     active: int
 
 
+class StageOut(CamelModel):
+    id: str
+    label: str
+    done: bool
+    current: bool = False
+
+
+class PropertyOut(CamelModel):
+    id: str
+    type: str | None = None
+    beds: int | None = None
+    baths: float | None = None
+    sqft: int | None = None
+    mls: str | None = None
+    is_rural: bool = False
+    has_hoa: bool = True
+
+
 class TransactionDetail(CamelModel):
     id: str
+    property_address: str
     address: str
     city: str
+    state: str
+    zip: str | None = None
+    county: str | None = None
+    legal_description: str | None = None
+    contract_date: dt.date | None = None
+    closing_date: dt.date | None = None
+    possession_date: dt.date | None = None
+    possession_time: str | None = None
     status: str
+    risk_level: str
+    completion_percent: int
+    created_at: dt.datetime
+    updated_at: dt.datetime
+    source_documents: list[SourceDocumentOut] = []
+    extraction_runs: list[ExtractionRunOut] = []
+    extracted_fields: list[ExtractedFieldOut] = []
+    deadlines: list[DeadlineOut] = []
+    tasks: list[TaskGroupOut] = []
+    contacts: list[ContactOut] = []
+    document_requirements: list[DocumentRequirementOut] = []
+    post_close_tasks: list[PostCloseTaskOut] = []
+    audit_events: list[AuditEventOut] = []
     property: PropertyOut | None = None
-    parties: list[PartyOut]
-    stages: list[StageOut]
+    parties: list[ContactOut] = []
+    stages: list[StageOut] = []
     money: MoneyOut
-    deadlines: list[DeadlineOut]
-    tasks: list[TaskGroupOut]
-    documents: list[DocumentOut]
+    documents: list[DocumentRequirementOut] = []
     counts: CountsOut
-
-
-# --- Documents / Extraction ------------------------------------------------
 
 
 class UploadOut(CamelModel):
     document_id: str
     status: str
     extraction_job_id: str
+    transaction_id: str | None = None
 
 
 class ExtractionFlag(CamelModel):
@@ -166,33 +285,15 @@ class ExtractionFlag(CamelModel):
     detail: str
 
 
-class ExtractionDeadline(CamelModel):
-    event: str
-    reference: str | None = None
-    category: str | None = None
-    date: _dt.date | None = None
-    raw_value: str | None = None
-    is_na: bool = False
-
-
-class ExtractedFieldOut(CamelModel):
-    id: str
-    label: str
-    value: str | None = None
-    confidence: float
-    review_status: str
-    category: str | None = None
-
-
 class ExtractionJobOut(CamelModel):
     id: str
     status: str
+    progress_percent: int = 100
+    transaction_id: str | None = None
+    source_document_id: str
     fields: list[ExtractedFieldOut] = []
-    deadlines: list[ExtractionDeadline] = []
+    deadlines: list[DeadlineOut] = []
     flags: list[ExtractionFlag] = []
-
-
-# --- Request bodies --------------------------------------------------------
 
 
 class ConfirmRequest(CamelModel):
@@ -201,15 +302,25 @@ class ConfirmRequest(CamelModel):
 
 
 class TaskPatch(CamelModel):
-    state: str
+    state: str | None = None
+    status: str | None = None
+    notes: str | None = None
+
+
+class FieldPatch(CamelModel):
+    action: str = "approve"
+    value: str | None = None
+
+
+class ContactPatch(CamelModel):
+    name: str | None = None
+    company: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    notes: str | None = None
+    complete: bool | None = None
 
 
 class DocumentPatch(CamelModel):
-    state: str
-
-
-# --- Error -----------------------------------------------------------------
-
-
-class ErrorResponse(CamelModel):
-    detail: str
+    state: str | None = None
+    received_status: str | None = None
