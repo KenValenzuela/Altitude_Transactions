@@ -53,7 +53,18 @@ export function ScreenChecklist({
     void onSetState?.(taskId, state);
   };
 
-  const cycle = (taskId: string, current: TaskState) => setState(taskId, nextState(current));
+    // Normalize API task statuses (not_started/in_progress/complete/not_applicable)
+    // to the checklist display states (todo/doing/done/na) used by this screen.
+    const toChecklistState = (s: TaskState | undefined): ChecklistState => {
+        const map: Partial<Record<string, ChecklistState>> = {
+            not_started: 'todo', in_progress: 'doing', complete: 'done', not_applicable: 'na',
+        };
+        if (!s) return 'todo';
+        return (map[s] ?? s) as ChecklistState;
+    };
+
+    const cycle = (taskId: string, current: TaskState | undefined) =>
+        setState(taskId, nextState(toChecklistState(current)));
 
   const visible = (state: ChecklistState) => {
     if (filter === 'all') return state !== 'na';
@@ -111,7 +122,7 @@ export function ScreenChecklist({
 
       <div className="alt-screen-body alt-scroll" style={{ padding: '0 20px 120px' }}>
         {groups.map((g, gi) => {
-          const items = g.items.filter(it => visible(it.state));
+            const items = g.items.filter(it => visible(toChecklistState(it.state)));
           if (items.length === 0 && filter !== 'all') return null;
           return (
             <div key={gi} style={{ marginBottom: 14 }}>
@@ -123,9 +134,10 @@ export function ScreenChecklist({
               </div>
               <div className="alt-card" style={{ padding: 0, overflow: 'hidden' }}>
                 {g.items.map((it, ii) => {
-                  if (!visible(it.state)) return null;
+                    const cs = toChecklistState(it.state);
+                    if (!visible(cs)) return null;
                   const isOpen = openItem === it.id;
-                  const isNA = it.state === 'na';
+                    const isNA = cs === 'na';
                   return (
                     <div key={it.id} style={{
                       borderBottom: ii < g.items.length - 1 ? '0.5px solid var(--line)' : 'none',
@@ -134,7 +146,7 @@ export function ScreenChecklist({
                     }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px' }}>
                         <div style={{ paddingTop: 1 }}>
-                          <StateCell state={it.state} onClick={() => cycle(it.id, it.state)}/>
+                            <StateCell state={cs} onClick={() => cycle(it.id, it.state)}/>
                         </div>
                         <button
                           type="button"
@@ -143,7 +155,7 @@ export function ScreenChecklist({
                           style={{ flex: 1, background: 'transparent', border: 0, padding: 0, textAlign: 'left' }}>
                           <div style={{
                             fontSize: 13.5, fontWeight: 500, color: 'var(--ink)',
-                            textDecoration: it.state === 'done' || isNA ? 'line-through' : 'none',
+                              textDecoration: cs === 'done' || isNA ? 'line-through' : 'none',
                             textDecorationColor: 'rgba(0,0,0,.25)',
                             display: 'flex', alignItems: 'center', gap: 6,
                           }}>
@@ -170,15 +182,15 @@ export function ScreenChecklist({
                           )}
                           <div className="alt-eyebrow" style={{ marginBottom: 6 }}>Set state</div>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
-                            {(['todo','doing','done','na'] as TaskState[]).map(s => (
+                              {(['todo', 'doing', 'done', 'na'] as ChecklistState[]).map(s => (
                               <button key={s} type="button"
                                 onClick={() => setState(it.id, s)}
                                 className="alt-tap"
                                 style={{
                                   appearance: 'none', padding: '8px 6px', borderRadius: 8,
-                                  border: `1px solid ${it.state === s ? STATE_CFG[s].dot : 'var(--line)'}`,
-                                  background: it.state === s ? STATE_CFG[s].bg : 'var(--paper)',
-                                  color: it.state === s ? STATE_CFG[s].fg : 'var(--ink-2)',
+                                    border: `1px solid ${cs === s ? STATE_CFG[s].dot : 'var(--line)'}`,
+                                    background: cs === s ? STATE_CFG[s].bg : 'var(--paper)',
+                                    color: cs === s ? STATE_CFG[s].fg : 'var(--ink-2)',
                                   fontSize: 10.5, fontWeight: 500,
                                 }}>
                                 {STATE_CFG[s].label}

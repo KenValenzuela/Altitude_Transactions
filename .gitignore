@@ -26,3 +26,14 @@ backend/uploads/*
 # --- misc ---
 .DS_Store
 *.pem
+
+# --- IDE ---
+.idea/
+
+# --- AI assistant tool artifacts (not needed in version control) ---
+# .agent/ is a duplicate of .claude/skills/ installed by the skill runner
+.agent/
+# .github/prompts/ contains skill prompt copies; keep .github/ available for real CI workflows
+.github/prompts/
+# settings.local.json is machine-specific; .claude/skills/ is intentionally tracked
+.claude/settings.local.json

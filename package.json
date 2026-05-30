@@ -1,0 +1,22 @@
+{
+  "name": "altitude-transactions",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "apps/mobile",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=frontend",
+    "build:web": "npm run build --workspace=frontend",
+    "lint:web": "npm run lint --workspace=frontend",
+    "typecheck:shared": "npm run typecheck --workspace=@altitude/shared",
+    "mobile": "npm run start --workspace=@altitude/mobile",
+    "mobile:ios": "npm run ios --workspace=@altitude/mobile",
+    "mobile:android": "npm run android --workspace=@altitude/mobile"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

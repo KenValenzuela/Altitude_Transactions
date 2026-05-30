@@ -13,17 +13,34 @@ import { StageRail } from '@/components/ui/StageRail';
 import { StateCell } from '@/components/ui/StateCell';
 
 const STATUS_LABELS: Record<TransactionDetail['status'], string> = {
+    draft: 'Draft',
   under_contract: 'Under Contract',
-  inspection: 'Inspection',
-  appraisal: 'Appraisal',
-  clear_to_close: 'Clear to Close',
+    in_review: 'Under Review',
+    active: 'Active',
+    closing: 'Closing',
   closed: 'Closed',
+    cancelled: 'Cancelled',
 };
+
+const STATUS_ORDER: TransactionDetail['status'][] = [
+    'under_contract', 'in_review', 'active', 'closing', 'closed',
+];
+
+function deriveStages(status: TransactionDetail['status']) {
+    const currentIdx = STATUS_ORDER.indexOf(status);
+    return STATUS_ORDER.map((s, i) => ({
+        id: s,
+        label: STATUS_LABELS[s],
+        done: i < currentIdx,
+        current: i === currentIdx,
+    }));
+}
 
 export function ScreenOverview({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?: TransactionDetail }) {
   const { done, doing, todo, na, active } = detail.counts;
   const pct = active > 0 ? Math.round((done / active) * 100) : 0;
-  const currentStageIndex = detail.stages.findIndex((s) => s.current);
+    const stages = deriveStages(detail.status);
+    const currentStageIndex = stages.findIndex((s) => s.current);
   const pending = detail.tasks
     .flatMap((g) => g.items)
     .filter((t) => !t.isPostClose && (t.state === 'doing' || t.state === 'todo'))
@@ -32,9 +49,10 @@ export function ScreenOverview({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?
   const nextDeadline = detail.deadlines
     .filter((dl) => !dl.isNa && dl.date)
     .sort((a, b) => (a.date! < b.date! ? -1 : 1))[0];
-  const nextDeadlineLabel = nextDeadline ? `Next: ${formatDateShort(nextDeadline.date)}` : 'None scheduled';
-  const receivedCount = detail.documents.filter((dc) => dc.state === 'received').length;
-  const pendingCount = detail.documents.filter((dc) => dc.state === 'pending').length;
+    const nextDeadlineLabel = nextDeadline ? `Next: ${formatDateShort(nextDeadline.date ?? null)}` : 'None scheduled';
+    const docs = detail.documents ?? [];
+    const receivedCount = docs.filter((dc) => dc.state === 'received').length;
+    const pendingCount = docs.filter((dc) => dc.state === 'pending').length;
 
   return (
     <div className="alt-screen-body alt-scroll" style={{ paddingBottom: 120 }}>
@@ -49,7 +67,7 @@ export function ScreenOverview({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?
           <IconButton icon={Icon.bell()} label="Updates"/>
         </div>
         <PropertyHero
-          property={{ address: detail.address, city: detail.city, type: detail.property.type, mls: detail.property.mls }}
+            property={{address: detail.address, city: detail.city, type: '', mls: ''}}
           height={170}
         />
       </div>
@@ -59,7 +77,7 @@ export function ScreenOverview({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?
         {[
           { l: 'Price',   v: formatPrice(detail.money.price), m: 'Contract' },
           { l: 'Earnest', v: formatPrice(detail.money.earnest),  m: 'In escrow' },
-          { l: 'Close',   v: formatDateShort(detail.money.closeDate),   m: `${detail.money.daysToClose} days` },
+            {l: 'Close', v: formatDateShort(detail.money.closeDate ?? null), m: `${detail.money.daysToClose} days`},
         ].map((s, i) => (
           <div key={i} className="alt-card" style={{ flex: 1, padding: '10px 12px' }}>
             <div className="alt-eyebrow" style={{ fontSize: 9 }}>{s.l}</div>
@@ -71,10 +89,10 @@ export function ScreenOverview({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?
 
       <SectionLabel>Stage</SectionLabel>
       <div className="alt-card" style={{ margin: '0 20px', padding: '12px 0' }}>
-        <StageRail stages={detail.stages}/>
+          <StageRail stages={stages}/>
         <div style={{ padding: '6px 18px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink-3)' }}>
           <span>Currently <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{STATUS_LABELS[detail.status]}</span></span>
-          {currentStageIndex >= 0 && <span>Stage {currentStageIndex + 1} of {detail.stages.length}</span>}
+            {currentStageIndex >= 0 && <span>Stage {currentStageIndex + 1} of {stages.length}</span>}
         </div>
       </div>
 
@@ -129,7 +147,7 @@ export function ScreenOverview({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?
         {[
           { t: 'Checklist', s: `${active} active`, to: 'checklist', accent: 'var(--ink)' },
           { t: 'Deadlines', s: nextDeadlineLabel, to: 'deadlines', accent: 'var(--gold)' },
-          { t: 'Parties',   s: `${detail.parties.length} contacts`, to: 'parties', accent: 'var(--sage)' },
+            {t: 'Parties', s: `${(detail.parties ?? []).length} contacts`, to: 'parties', accent: 'var(--sage)'},
           { t: 'Documents', s: `${receivedCount} received · ${pendingCount} pending`, to: 'documents', accent: 'var(--clay)' },
         ].map((a) => (
           <button key={a.t} type="button" onClick={() => go(a.to as Parameters<GoFn>[0])}

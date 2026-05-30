@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import type { GoFn } from '@/types';
-import type { ApiDocument, ApiDocumentState } from '@/types/api';
+import type {ApiDocumentState} from '@/types/api';
+import type {DocumentRequirement as ApiDocument} from '@/types/domain';
 import { DEMO_DETAIL } from '@/lib/fixtures';
 import { Icon } from '@/components/ui/icons';
 import { IconButton } from '@/components/ui/IconButton';
@@ -14,6 +15,9 @@ const DOC_CYCLE: Record<ApiDocumentState, ApiDocumentState> = {
   pending: 'upcoming',
   upcoming: 'na',
   na: 'received',
+    reviewed: 'approved',
+    approved: 'received',
+    missing: 'pending',
 };
 
 function DocRow({ doc, onCycle }: { doc: ApiDocument; onCycle: (d: ApiDocument) => void }) {
@@ -41,14 +45,14 @@ function DocRow({ doc, onCycle }: { doc: ApiDocument; onCycle: (d: ApiDocument) 
           fontSize: 13, fontWeight: 500,
           textDecoration: doc.state === 'na' ? 'line-through' : 'none',
           textDecorationColor: 'rgba(0,0,0,.25)',
-        }}>{doc.name}</div>
+        }}>{doc.name ?? doc.documentName}</div>
         <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 2 }}>
-          {doc.detail || doc.source}
+            {doc.notes || doc.purpose}
         </div>
       </div>
       <button type="button" className="alt-tap" onClick={() => onCycle(doc)}
         style={{ appearance: 'none', border: 0, background: 'transparent', padding: 0, cursor: 'pointer' }}
-        aria-label={`Cycle status for ${doc.name}`}>
+              aria-label={`Cycle status for ${doc.name ?? doc.documentName}`}>
         {doc.state === 'received' && <span style={{ color: 'var(--sage)' }}>{Icon.check()}</span>}
         {doc.state === 'pending' && (
           <span className="alt-pill" style={{ background: 'var(--gold-soft)', color: 'var(--gold)' }}>
@@ -77,7 +81,7 @@ interface ScreenDocumentsProps {
 
 export function ScreenDocuments({
   go,
-  documents = DEMO_DETAIL.documents,
+                                    documents = DEMO_DETAIL.documents ?? [],
   onSetState,
   title = 'Documents',
 }: ScreenDocumentsProps) {
@@ -87,7 +91,8 @@ export function ScreenDocuments({
   useEffect(() => { setDocs(documents); }, [documents]);
 
   const cycle = (doc: ApiDocument) => {
-    const next = DOC_CYCLE[doc.state];
+      const currentState = (doc.state ?? 'pending') as ApiDocumentState;
+      const next = DOC_CYCLE[currentState] ?? 'pending';
     setDocs((prev) => prev.map((d) => (d.id === doc.id ? { ...d, state: next } : d)));
     void onSetState?.(doc.id, next);
   };

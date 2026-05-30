@@ -94,12 +94,16 @@ export function ScreenReview({ go, job = DEMO_EXTRACTION, onConfirm, busy = fals
               borderBottom: i < a.length - 1 ? '0.5px solid var(--line)' : 'none',
             }}>
               <div style={{ minWidth: 54, padding: '6px 8px', borderRadius: 8, background: 'var(--paper-2)', textAlign: 'center' }}>
-                <div className="alt-mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>{formatDateShort(d.date).split(' ')[0]}</div>
-                <div className="alt-display" style={{ fontSize: 18, lineHeight: 1 }}>{formatDateShort(d.date).split(' ')[1] ?? ''}</div>
+                  <div className="alt-mono" style={{
+                      fontSize: 10,
+                      color: 'var(--ink-3)'
+                  }}>{formatDateShort(d.date ?? null).split(' ')[0]}</div>
+                  <div className="alt-display"
+                       style={{fontSize: 18, lineHeight: 1}}>{formatDateShort(d.date ?? null).split(' ')[1] ?? ''}</div>
               </div>
-              <div style={{ flex: 1, fontSize: 14 }}>{d.event}</div>
+                <div style={{flex: 1, fontSize: 14}}>{d.event ?? d.eventName}</div>
               <span className="alt-pill" style={{ background: 'var(--paper-2)', color: 'var(--ink-3)', fontFamily: 'var(--f-mono)', fontSize: 10 }}>
-                {d.reference}
+                {d.sectionReference}
               </span>
             </div>
           ))}

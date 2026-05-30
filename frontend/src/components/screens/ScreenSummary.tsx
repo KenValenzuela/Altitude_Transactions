@@ -75,7 +75,11 @@ export function ScreenSummary({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?:
             {upcoming.length === 0 && <div style={{ padding: '12px 14px', fontSize: 13, color: 'var(--ink-3)' }}>No upcoming deadlines.</div>}
             {upcoming.map((d, i, a) => (
               <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: i < a.length - 1 ? '0.5px solid var(--line)' : 'none' }}>
-                <div className="alt-mono" style={{ fontSize: 11, color: 'var(--ink-3)', minWidth: 76 }}>{formatDateShort(d.date)}</div>
+                  <div className="alt-mono" style={{
+                      fontSize: 11,
+                      color: 'var(--ink-3)',
+                      minWidth: 76
+                  }}>{formatDateShort(d.date ?? null)}</div>
                 <div style={{ fontSize: 13, color: 'var(--ink-2)', flex: 1 }}>{d.event}</div>
               </div>
             ))}
@@ -94,7 +98,7 @@ export function ScreenSummary({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?:
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.45 }}>{r.event}</div>
                   <div className="alt-mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginTop: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                    {r.reference} · {formatDateShort(r.date)}
+                      {r.sectionReference} · {formatDateShort(r.date ?? null)}
                   </div>
                 </div>
               </div>
