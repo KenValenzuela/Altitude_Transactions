@@ -1,0 +1,2 @@
+import type { ExtractedField } from '@/types/domain';import { ExtractedFieldRow } from './ExtractedFieldRow';
+export function ExtractionReviewTable({fields,onApprove}:{fields:ExtractedField[];onApprove?:(f:ExtractedField)=>void}){return <div className="table-scroll"><table className="review-table"><thead><tr><th>Field</th><th>Value</th><th>Confidence</th><th>Evidence</th><th>Population</th><th>Review</th></tr></thead><tbody>{fields.map(f=><ExtractedFieldRow key={f.id} field={f} onApprove={onApprove}/>)}</tbody></table></div>}

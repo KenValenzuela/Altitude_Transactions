@@ -1,0 +1,1 @@
+export function ErrorState({message,onRetry}:{message:string;onRetry?:()=>void}){return <div className="ops-card error-state"><strong>{message}</strong>{onRetry&&<button onClick={onRetry}>Retry</button>}</div>}

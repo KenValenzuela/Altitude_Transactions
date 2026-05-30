@@ -1,0 +1,2 @@
+import type { Contact } from '@/types/domain';import { StatusBadge } from './StatusBadge';
+export function ContactMatrix({contacts}:{contacts:Contact[]}){return <div className="card-grid">{contacts.map(c=><article className="ops-card" key={c.id}><p className="eyebrow">{c.role.replaceAll('_',' ')}</p><h3>{c.name||c.company||'Missing contact'}</h3><p>{c.email||'email needed'} · {c.phone||'phone needed'}</p><StatusBadge label={c.complete?'Complete':c.required?'Needs Review':'Optional'} tone={c.complete?'success':'warning'}/></article>)}</div>}

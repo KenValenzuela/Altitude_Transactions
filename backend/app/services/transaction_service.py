@@ -1,283 +1,78 @@
-"""Transaction build + dashboard/detail assembly."""
 from __future__ import annotations
 
 from datetime import date
 
 from sqlmodel import Session, select
 
-from app.models import (
-    Document,
-    Party,
-    PartyRole,
-    Property,
-    Transaction,
-    TransactionStatus,
-)
-from app.schemas import (
-    CountsOut,
-    DeadlineOut,
-    DocumentOut,
-    MoneyOut,
-    PartyOut,
-    PropertyOut,
-    StageOut,
-    TransactionCard,
-    TransactionDetail,
-)
-from app.services import deadline_service, task_service
-from app.services.extraction_service import ExtractionResult
-
-# Human labels for statuses.
-STATUS_LABELS = {
-    TransactionStatus.under_contract: "Under Contract",
-    TransactionStatus.inspection: "Inspection",
-    TransactionStatus.appraisal: "Appraisal",
-    TransactionStatus.clear_to_close: "Clear to Close",
-    TransactionStatus.closed: "Closed",
-}
-
-# Derived stage rail definition. Maps to TransactionStatus progression.
-_RAIL = [
-    ("under_contract", "Under Contract", [TransactionStatus.under_contract]),
-    ("inspection", "Inspection", [TransactionStatus.inspection]),
-    ("appraisal", "Appraisal", [TransactionStatus.appraisal]),
-    ("loan", "Loan Approval", [TransactionStatus.clear_to_close]),
-    ("closing", "Closing", [TransactionStatus.closed]),
-]
-_RAIL_INDEX = {
-    TransactionStatus.under_contract: 0,
-    TransactionStatus.inspection: 1,
-    TransactionStatus.appraisal: 2,
-    TransactionStatus.clear_to_close: 3,
-    TransactionStatus.closed: 4,
-}
+from app.models import Contact, Deadline, DocumentRequirement, ExtractionRun, ExtractedField, PostCloseTask, SourceDocument, Task, TaskStatus, Transaction, AuditEvent
+from app.schemas import *  # noqa: F403
+from app.services.demo_workflow import materialize_extraction
 
 
-# --- Build from extraction -------------------------------------------------
+def _days(close: date | None) -> int:
+    return (close - date.today()).days if close else 0
 
 
-def build_from_extraction(
-    session: Session,
-    *,
-    owner_id: str,
-    result: ExtractionResult,
-    document: Document | None,
-    overrides: dict[str, str] | None = None,
-) -> Transaction:
-    """Create Transaction + Property + Parties + Deadlines + Tasks.
-
-    `overrides` is a {fieldLabel-or-key: value} map applied to scalar fields.
-    Supported override keys: address, city, county, price, earnest, loanType,
-    closeDate.
-    """
-    overrides = overrides or {}
-
-    def ov(key: str, default):
-        return overrides[key] if key in overrides else default
-
-    price = int(ov("price", result.price))
-    earnest = int(ov("earnest", result.earnest))
-    close_date = result.close_date
-    if "closeDate" in overrides:
-        close_date = _parse_date(overrides["closeDate"]) or close_date
-
-    tx = Transaction(
-        owner_id=owner_id,
-        address=str(ov("address", result.address)),
-        city=str(ov("city", result.city)),
-        county=ov("county", result.county),
-        status=TransactionStatus.under_contract,
-        price=price,
-        earnest=earnest,
-        loan_type=ov("loanType", result.loan_type),
-        close_date=close_date,
-    )
-    session.add(tx)
-    session.commit()
-    session.refresh(tx)
-
-    prop = Property(
-        transaction_id=tx.id,
-        type="Single Family",
-        is_rural=result.is_rural,
-        has_hoa=result.has_hoa,
-    )
-    session.add(prop)
-
-    for p in result.parties:
-        try:
-            role = PartyRole(p["role"])
-        except ValueError:
-            continue
-        session.add(
-            Party(
-                transaction_id=tx.id,
-                role=role,
-                name=p.get("name") or role.value.title(),
-                sub=p.get("sub"),
-                phone=p.get("phone"),
-                email=p.get("email"),
-            )
-        )
-
-    deadline_service.build_deadlines(session, tx.id, result)
-    task_service.build_tasks(session, tx.id, result)
-
-    if document is not None:
-        document.transaction_id = tx.id
-        session.add(document)
-
-    session.commit()
-    session.refresh(tx)
-    return tx
+def _task_out(t: Task) -> TaskOut:
+    state_map = {"not_started":"todo", "in_progress":"doing", "complete":"done", "not_applicable":"na"}
+    return TaskOut.model_validate({**t.model_dump(), "group": t.category, "due": t.due_date.isoformat() if t.due_date else None, "state": state_map.get(t.status.value, t.status.value), "ai_note": t.notes, "is_post_close": t.category == "post_close"})
 
 
-def _parse_date(value: str) -> date | None:
-    from datetime import datetime
-
-    for fmt in ("%Y-%m-%d", "%m/%d/%Y"):
-        try:
-            return datetime.strptime(value.strip(), fmt).date()
-        except (ValueError, AttributeError):
-            continue
-    return None
+def _deadline_out(d: Deadline) -> DeadlineOut:
+    return DeadlineOut.model_validate({**d.model_dump(), "event": d.event_name, "reference": d.section_reference, "category": d.section_reference, "date": d.due_date, "is_na": d.applicability.value == "not_applicable", "is_urgent": d.event_name in {"Inspection Objection Deadline", "Seller’s Property Disclosure Deadline", "Alternative Earnest Money Deadline"}})
 
 
-# --- Assembly helpers ------------------------------------------------------
+def _doc_out(d: DocumentRequirement) -> DocumentRequirementOut:
+    state = {"missing":"pending", "received":"received", "reviewed":"received", "approved":"received"}.get(d.received_status.value, "pending")
+    return DocumentRequirementOut.model_validate({**d.model_dump(), "name": d.document_name, "source": d.category, "state": state})
 
 
-def _days_to_close(close_date: date | None, today: date | None = None) -> int:
-    if close_date is None:
-        return 0
-    today = today or date.today()
-    return (close_date - today).days
-
-
-def _progress(session: Session, transaction_id: str) -> float:
-    tasks = task_service.list_tasks(session, transaction_id)
-    countable = [t for t in tasks if t.state.value != "na"]
-    if not countable:
-        return 0.0
-    done = sum(1 for t in countable if t.state.value == "done")
-    return round(done / len(countable), 2)
-
-
-def _next_action(session: Session, transaction_id: str) -> tuple[str, bool]:
-    """Return (label, urgent) for the next upcoming deadline."""
-    deadlines = deadline_service.list_deadlines(session, transaction_id)
-    today = date.today()
-    upcoming = [d for d in deadlines if d.date is not None and d.date >= today]
-    if upcoming:
-        nxt = upcoming[0]
-        return f"{nxt.event} {nxt.date.strftime('%b %d')}", any(d.is_urgent for d in upcoming)
-    # fall back to any dated deadline
-    dated = [d for d in deadlines if d.date is not None]
-    if dated:
-        nxt = dated[0]
-        return f"{nxt.event} {nxt.date.strftime('%b %d')}", False
-    return "No upcoming deadlines", False
-
-
-def _parties_label(session: Session, transaction_id: str) -> str:
-    parties = session.exec(
-        select(Party).where(Party.transaction_id == transaction_id)
-    ).all()
-    buyer = next((p for p in parties if p.role == PartyRole.buyer), None)
-    seller = next((p for p in parties if p.role == PartyRole.seller), None)
-
-    def last(name: str | None) -> str | None:
-        if not name:
-            return None
-        return name.split()[-1]
-
-    labels = [x for x in (last(buyer.name if buyer else None), last(seller.name if seller else None)) if x]
-    return " · ".join(labels) if labels else ""
-
-
-# --- Public assembly -------------------------------------------------------
-
-
-def to_card(session: Session, tx: Transaction, active: bool = False) -> TransactionCard:
-    next_label, next_urgent = _next_action(session, tx.id)
-    deadlines = deadline_service.list_deadlines(session, tx.id)
-    urgent = next_urgent or any(d.is_urgent for d in deadlines)
-    return TransactionCard(
-        id=tx.id,
-        address=tx.address,
-        city=tx.city,
-        stage=STATUS_LABELS[tx.status],
-        status=tx.status.value,
-        days_to_close=_days_to_close(tx.close_date),
-        progress=_progress(session, tx.id),
-        next=next_label,
-        urgent=urgent,
-        parties=_parties_label(session, tx.id),
-        price=tx.price,
-        active=active,
-    )
+def _contact_out(c: Contact) -> ContactOut:
+    return ContactOut.model_validate({**c.model_dump(), "sub": c.company})
 
 
 def list_cards(session: Session, owner_id: str) -> list[TransactionCard]:
-    txs = session.exec(
-        select(Transaction).where(Transaction.owner_id == owner_id)
-    ).all()
-    txs = sorted(txs, key=lambda t: t.created_at)
-    cards = [to_card(session, t, active=(i == 0)) for i, t in enumerate(txs)]
+    txs = session.exec(select(Transaction).where(Transaction.owner_id == owner_id)).all()
+    cards=[]
+    for i, tx in enumerate(txs):
+        tasks = session.exec(select(Task).where(Task.transaction_id == tx.id)).all()
+        countable=[t for t in tasks if t.status != TaskStatus.not_applicable]
+        complete=sum(1 for t in countable if t.status == TaskStatus.complete)
+        progress=round(complete/len(countable), 2) if countable else 0
+        next_deadline=session.exec(select(Deadline).where(Deadline.transaction_id == tx.id, Deadline.due_date != None).order_by(Deadline.due_date)).first()  # noqa: E711
+        contacts=session.exec(select(Contact).where(Contact.transaction_id == tx.id)).all()
+        names=" · ".join([c.name for c in contacts if c.name][:2])
+        cards.append(TransactionCard(id=tx.id, address=tx.property_address, city=tx.city, stage="Under Contract", status=tx.status.value, days_to_close=_days(tx.closing_date), progress=progress, next=f"{next_deadline.event_name} {next_deadline.due_date:%b %d}" if next_deadline and next_deadline.due_date else "Review extracted fields", urgent=bool(next_deadline), parties=names, price=tx.purchase_price, active=i==0))
     return cards
 
 
-def _stage_rail(tx: Transaction) -> list[StageOut]:
-    current_idx = _RAIL_INDEX[tx.status]
-    stages: list[StageOut] = []
-    for i, (sid, label, _statuses) in enumerate(_RAIL):
-        done = i < current_idx or tx.status == TransactionStatus.closed
-        current = i == current_idx and tx.status != TransactionStatus.closed
-        stages.append(StageOut(id=sid, label=label, done=done, current=current))
-    return stages
-
-
-def _counts(session: Session, transaction_id: str) -> CountsOut:
-    tasks = task_service.list_tasks(session, transaction_id)
-    done = sum(1 for t in tasks if t.state.value == "done")
-    doing = sum(1 for t in tasks if t.state.value == "doing")
-    todo = sum(1 for t in tasks if t.state.value == "todo")
-    na = sum(1 for t in tasks if t.state.value == "na")
-    return CountsOut(done=done, doing=doing, todo=todo, na=na, active=done + doing + todo)
+def grouped_tasks(tasks: list[Task]) -> list[TaskGroupOut]:
+    groups: dict[str, list[TaskOut]]={}
+    for t in tasks: groups.setdefault(t.category, []).append(_task_out(t))
+    return [TaskGroupOut(group=k, items=v) for k,v in groups.items()]
 
 
 def to_detail(session: Session, tx: Transaction) -> TransactionDetail:
-    prop = session.exec(
-        select(Property).where(Property.transaction_id == tx.id)
-    ).first()
-    parties = session.exec(
-        select(Party).where(Party.transaction_id == tx.id)
-    ).all()
-    documents = session.exec(
-        select(Document).where(Document.transaction_id == tx.id)
-    ).all()
-    deadlines = deadline_service.list_deadlines(session, tx.id)
-    tasks = task_service.list_tasks(session, tx.id)
-
+    source_documents=session.exec(select(SourceDocument).where(SourceDocument.transaction_id == tx.id)).all()
+    runs=session.exec(select(ExtractionRun).where(ExtractionRun.transaction_id == tx.id)).all()
+    fields=session.exec(select(ExtractedField).where(ExtractedField.transaction_id == tx.id)).all()
+    deadlines=session.exec(select(Deadline).where(Deadline.transaction_id == tx.id)).all()
+    tasks=session.exec(select(Task).where(Task.transaction_id == tx.id)).all()
+    contacts=session.exec(select(Contact).where(Contact.transaction_id == tx.id)).all()
+    docs=session.exec(select(DocumentRequirement).where(DocumentRequirement.transaction_id == tx.id)).all()
+    post=session.exec(select(PostCloseTask).where(PostCloseTask.transaction_id == tx.id)).all()
+    audit=session.exec(select(AuditEvent).where(AuditEvent.transaction_id == tx.id).order_by(AuditEvent.created_at)).all()
+    done=sum(1 for t in tasks if t.status == TaskStatus.complete); doing=sum(1 for t in tasks if t.status == TaskStatus.in_progress); todo=sum(1 for t in tasks if t.status == TaskStatus.not_started); na=sum(1 for t in tasks if t.status == TaskStatus.not_applicable)
+    field_out=[ExtractedFieldOut.model_validate({**f.model_dump(), "category": (f.source_section or "Contract").split()[0]}) for f in fields]
     return TransactionDetail(
-        id=tx.id,
-        address=tx.address,
-        city=tx.city,
-        status=tx.status.value,
-        property=PropertyOut.model_validate(prop) if prop else None,
-        parties=[PartyOut.model_validate(p) for p in parties],
-        stages=_stage_rail(tx),
-        money=MoneyOut(
-            price=tx.price,
-            earnest=tx.earnest,
-            close_date=tx.close_date,
-            days_to_close=_days_to_close(tx.close_date),
-        ),
-        deadlines=[DeadlineOut.model_validate(d) for d in deadlines],
-        tasks=task_service.grouped_tasks(tasks),
-        documents=[DocumentOut.model_validate(d) for d in documents],
-        counts=_counts(session, tx.id),
-    )
+        id=tx.id, property_address=tx.property_address, address=tx.property_address, city=tx.city, state=tx.state, zip=tx.zip, county=tx.county, legal_description=tx.legal_description, contract_date=tx.contract_date, closing_date=tx.closing_date, possession_date=tx.possession_date, possession_time=tx.possession_time, status=tx.status.value, risk_level=tx.risk_level.value, completion_percent=tx.completion_percent, created_at=tx.created_at, updated_at=tx.updated_at,
+        source_documents=[SourceDocumentOut.model_validate(d) for d in source_documents], extraction_runs=[ExtractionRunOut.model_validate(r) for r in runs], extracted_fields=field_out, deadlines=[_deadline_out(d) for d in deadlines], tasks=grouped_tasks(tasks), contacts=[_contact_out(c) for c in contacts], document_requirements=[_doc_out(d) for d in docs], post_close_tasks=[PostCloseTaskOut.model_validate(p) for p in post], audit_events=[AuditEventOut.model_validate(a) for a in audit],
+        property=PropertyOut(id=tx.id, is_rural=False, has_hoa=True), parties=[_contact_out(c) for c in contacts], stages=[StageOut(id="under_contract", label="Under Contract", done=True), StageOut(id="review", label="Review", done=False, current=True), StageOut(id="active", label="Active Ops", done=False), StageOut(id="closing", label="Closing", done=False), StageOut(id="closed", label="Closed", done=False)], money=MoneyOut(price=tx.purchase_price, earnest=tx.earnest_money, close_date=tx.closing_date, days_to_close=_days(tx.closing_date)), documents=[_doc_out(d) for d in docs], counts=CountsOut(done=done, doing=doing, todo=todo, na=na, active=done+doing+todo))
 
 
 def get_transaction(session: Session, transaction_id: str) -> Transaction | None:
     return session.get(Transaction, transaction_id)
+
+
+def build_from_extraction(session: Session, owner_id: str, run: ExtractionRun, doc: SourceDocument) -> Transaction:
+    return materialize_extraction(session, run, doc, owner_id)

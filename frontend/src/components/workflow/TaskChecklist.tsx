@@ -1,0 +1,2 @@
+import type { TaskGroup,Task } from '@/types/domain';import { TaskStatusToggle } from './TaskStatusToggle';
+export function TaskChecklist({groups,onToggle}:{groups:TaskGroup[];onToggle?:(t:Task)=>void}){return <div className="list-stack">{groups.flatMap(g=>g.items.map(t=><article className="ops-row" key={t.id}><div><p className="eyebrow">{g.group}</p><strong>{t.title}</strong><p>{t.notes||t.aiNote}</p></div><span>{t.dueDate||t.due}</span><TaskStatusToggle task={t} onToggle={onToggle}/></article>))}</div>}

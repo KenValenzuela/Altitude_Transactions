@@ -1,0 +1,2 @@
+import type { DocumentRequirement } from '@/types/domain';import { StatusBadge } from './StatusBadge';
+export function DocumentRequirementList({documents}:{documents:DocumentRequirement[]}){return <div className="list-stack">{documents.map(d=><article className="ops-row" key={d.id}><div><strong>{d.documentName||d.name}</strong><p>{d.category} · {d.purpose}</p></div><StatusBadge label={d.receivedStatus||d.state||'missing'} tone={(d.receivedStatus==='approved'||d.receivedStatus==='reviewed')?'success':'warning'}/></article>)}</div>}

@@ -1,11 +1,7 @@
-"""SQLModel database tables for Altitude.
-
-Postgres-compatible: string UUID primary keys, no SQLite-only features.
-Internal field names are snake_case; the API layer maps to camelCase.
-"""
+"""Altitude workflow SQLModel tables for the custom CTME demo."""
 from __future__ import annotations
 
-import datetime as _dt
+import datetime as dt
 from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4
@@ -21,54 +17,76 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-# --- Enums -----------------------------------------------------------------
-
-
 class TransactionStatus(str, Enum):
+    draft = "draft"
     under_contract = "under_contract"
-    inspection = "inspection"
-    appraisal = "appraisal"
-    clear_to_close = "clear_to_close"
+    in_review = "in_review"
+    active = "active"
+    closing = "closing"
     closed = "closed"
-
-
-class PartyRole(str, Enum):
-    buyer = "buyer"
-    seller = "seller"
-    listing_agent = "listing_agent"
-    lender = "lender"
-    title = "title"
-    inspector = "inspector"
-
-
-class DocumentState(str, Enum):
-    received = "received"
-    pending = "pending"
-    upcoming = "upcoming"
-    na = "na"
+    cancelled = "cancelled"
 
 
 class ExtractionStatus(str, Enum):
-    pending = "pending"
-    running = "running"
-    complete = "complete"
+    queued = "queued"
+    uploading = "uploading"
+    parsing_pdf = "parsing_pdf"
+    extracting_fields = "extracting_fields"
+    generating_deadlines = "generating_deadlines"
+    generating_tasks = "generating_tasks"
+    needs_review = "needs_review"
+    approved = "approved"
     failed = "failed"
+
+
+class PopulationStatus(str, Enum):
+    populated = "populated"
+    missing_required = "missing_required"
+    not_applicable = "not_applicable"
+    redacted_in_source = "redacted_in_source"
+    completed = "completed"
+    needs_human_review = "needs_human_review"
+    manual_override = "manual_override"
+    superseded_by_amendment = "superseded_by_amendment"
 
 
 class ReviewStatus(str, Enum):
     pending = "pending"
-    confirmed = "confirmed"
+    approved = "approved"
     edited = "edited"
+    rejected = "rejected"
 
 
-class TaskState(str, Enum):
-    todo = "todo"
-    doing = "doing"
-    done = "done"
-    na = "na"
+class TaskStatus(str, Enum):
+    not_started = "not_started"
+    in_progress = "in_progress"
+    complete = "complete"
+    not_applicable = "not_applicable"
 
 
-# --- Tables ----------------------------------------------------------------
+class DeadlineApplicability(str, Enum):
+    active = "active"
+    not_applicable = "not_applicable"
+    completed = "completed"
+
+
+class RiskLevel(str, Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+
+class RequiredStatus(str, Enum):
+    required = "required"
+    conditional = "conditional"
+    not_applicable = "not_applicable"
+
+
+class ReceivedStatus(str, Enum):
+    missing = "missing"
+    received = "received"
+    reviewed = "reviewed"
+    approved = "approved"
 
 
 class User(SQLModel, table=True):
@@ -82,87 +100,168 @@ class User(SQLModel, table=True):
 class Transaction(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     owner_id: str = Field(foreign_key="user.id", index=True)
-    address: str
+    property_address: str = Field(index=True)
     city: str
+    state: str = "CO"
+    zip: str | None = None
     county: str | None = None
-    status: TransactionStatus = Field(default=TransactionStatus.under_contract)
-    price: int = 0
-    earnest: int = 0
-    loan_type: str | None = None
-    close_date: _dt.date | None = None
+    legal_description: str | None = None
+    contract_date: dt.date | None = None
+    closing_date: dt.date | None = None
+    possession_date: dt.date | None = None
+    possession_time: str | None = None
+    status: TransactionStatus = Field(default=TransactionStatus.in_review)
+    risk_level: RiskLevel = Field(default=RiskLevel.medium)
+    completion_percent: int = 0
+    purchase_price: int = 0
+    earnest_money: int = 0
     created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
 
 
-class Property(SQLModel, table=True):
-    id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str = Field(foreign_key="transaction.id", index=True)
-    type: str | None = None
-    beds: int | None = None
-    baths: float | None = None
-    sqft: int | None = None
-    mls: str | None = None
-    is_rural: bool = False
-    has_hoa: bool = False
-
-
-class Party(SQLModel, table=True):
-    id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str = Field(foreign_key="transaction.id", index=True)
-    role: PartyRole
-    name: str
-    sub: str | None = None
-    phone: str | None = None
-    email: str | None = None
-
-
-class Document(SQLModel, table=True):
+class SourceDocument(SQLModel, table=True):
+    __tablename__ = "source_documents"
     id: str = Field(default_factory=_uuid, primary_key=True)
     transaction_id: str | None = Field(default=None, foreign_key="transaction.id", index=True)
-    name: str
-    source: str | None = None
-    state: DocumentState = Field(default=DocumentState.received)
-    original_filename: str | None = None
-    content_type: str | None = None
-    size_bytes: int | None = None
-    created_at: datetime = Field(default_factory=_now)
+    filename: str
+    document_type: str = "CTME Contract to Buy and Sell Real Estate"
+    mime_type: str | None = None
+    file_size_bytes: int | None = None
+    storage_path: str | None = None
+    sha256_hash: str | None = None
+    uploaded_by: str | None = None
+    uploaded_at: datetime = Field(default_factory=_now)
 
 
-class ExtractionJob(SQLModel, table=True):
+class ExtractionRun(SQLModel, table=True):
+    __tablename__ = "extraction_runs"
     id: str = Field(default_factory=_uuid, primary_key=True)
-    document_id: str = Field(foreign_key="document.id", index=True)
-    status: ExtractionStatus = Field(default=ExtractionStatus.pending)
-    created_at: datetime = Field(default_factory=_now)
+    transaction_id: str | None = Field(default=None, foreign_key="transaction.id", index=True)
+    source_document_id: str = Field(foreign_key="source_documents.id", index=True)
+    status: ExtractionStatus = Field(default=ExtractionStatus.needs_review)
+    started_at: datetime = Field(default_factory=_now)
     completed_at: datetime | None = None
+    model_name: str = "deterministic-ctme-demo"
+    schema_version: str = "altitude-demo-v1"
+    error_message: str | None = None
+    progress_percent: int = 100
 
 
 class ExtractedField(SQLModel, table=True):
+    __tablename__ = "extracted_fields"
     id: str = Field(default_factory=_uuid, primary_key=True)
-    job_id: str = Field(foreign_key="extractionjob.id", index=True)
+    transaction_id: str | None = Field(default=None, foreign_key="transaction.id", index=True)
+    extraction_run_id: str = Field(foreign_key="extraction_runs.id", index=True)
+    field_key: str
     label: str
     value: str | None = None
+    normalized_value: str | None = None
+    source_document_id: str = Field(foreign_key="source_documents.id", index=True)
+    source_page: int | None = None
+    source_section: str | None = None
     confidence: float = 1.0
+    population_status: PopulationStatus = Field(default=PopulationStatus.populated)
     review_status: ReviewStatus = Field(default=ReviewStatus.pending)
-    category: str | None = None
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    created_at: datetime = Field(default_factory=_now)
 
 
 class Deadline(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     transaction_id: str = Field(foreign_key="transaction.id", index=True)
-    event: str
-    reference: str | None = None
-    category: str | None = None
-    date: _dt.date | None = None
+    item_number: str | None = None
+    section_reference: str | None = None
+    event_name: str
+    due_date: dt.date | None = None
+    due_time: str | None = None
     raw_value: str | None = None
-    is_urgent: bool = False
-    is_na: bool = False
+    applicability: DeadlineApplicability = Field(default=DeadlineApplicability.active)
+    source_document_id: str = Field(foreign_key="source_documents.id", index=True)
+    source_page: int | None = None
+    source_section: str | None = None
+    linked_task_id: str | None = None
+    created_at: datetime = Field(default_factory=_now)
 
 
 class Task(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     transaction_id: str = Field(foreign_key="transaction.id", index=True)
-    group: str
     title: str
-    due: str | None = None
-    state: TaskState = Field(default=TaskState.todo)
-    ai_note: str | None = None
-    is_post_close: bool = False
+    category: str
+    status: TaskStatus = Field(default=TaskStatus.not_started)
+    due_date: dt.date | None = None
+    completed_at: datetime | None = None
+    assigned_role: str | None = None
+    notes: str | None = None
+    linked_deadline_id: str | None = Field(default=None, foreign_key="deadline.id")
+    source_type: str = "generated_from_deadline"
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
+class Contact(SQLModel, table=True):
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    transaction_id: str = Field(foreign_key="transaction.id", index=True)
+    role: str
+    name: str | None = None
+    company: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    license_number: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    required: bool = True
+    complete: bool = False
+    source: str = "contract_extraction"
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
+class DocumentRequirement(SQLModel, table=True):
+    __tablename__ = "document_requirements"
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    transaction_id: str = Field(foreign_key="transaction.id", index=True)
+    document_name: str
+    category: str
+    purpose: str | None = None
+    required_status: RequiredStatus = Field(default=RequiredStatus.required)
+    received_status: ReceivedStatus = Field(default=ReceivedStatus.missing)
+    source_document_id: str | None = Field(default=None, foreign_key="source_documents.id")
+    due_date: dt.date | None = None
+    notes: str | None = None
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
+class PostCloseTask(SQLModel, table=True):
+    __tablename__ = "post_close_tasks"
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    transaction_id: str = Field(foreign_key="transaction.id", index=True)
+    title: str
+    recipient_role: str | None = None
+    status: TaskStatus = Field(default=TaskStatus.not_started)
+    date_sent: dt.date | None = None
+    date_completed: dt.date | None = None
+    notes: str | None = None
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
+class AuditEvent(SQLModel, table=True):
+    __tablename__ = "audit_events"
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    transaction_id: str | None = Field(default=None, foreign_key="transaction.id", index=True)
+    actor_type: str = "system"
+    actor_id: str | None = None
+    event_type: str
+    entity_type: str
+    entity_id: str | None = None
+    before_value: str | None = None
+    after_value: str | None = None
+    created_at: datetime = Field(default_factory=_now)
+    metadata_json: str | None = None
+
+# Compatibility aliases for legacy route names/tests.
+Document = SourceDocument
+ExtractionJob = ExtractionRun

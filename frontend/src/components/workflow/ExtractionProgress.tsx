@@ -1,0 +1,2 @@
+import type { ExtractionJob } from '@/types/domain';
+export function ExtractionProgress({job}:{job?:ExtractionJob}){const pct=job?.progressPercent??35;return <section className="ops-card"><p className="eyebrow">Extraction Progress</p><h2>{job?.status?.replaceAll('_',' ') ?? 'parsing pdf'}</h2><progress value={pct} max={100}/><p className="muted">Backend extraction preserves evidence and never parses PDFs in the browser.</p></section>}

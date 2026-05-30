@@ -1,33 +1,3 @@
 'use client';
-import { useRouter } from 'next/navigation';
-import { api, getStoredUser } from '@/lib/api-client';
-import { useApi } from '@/hooks/useApi';
-import { useScreenNav } from '@/lib/navigation';
-import { DEMO_USER } from '@/lib/fixtures';
-import { AppShell } from '@/components/ui/AppShell';
-import { LoadingState, ErrorState } from '@/components/ui/States';
-import { ScreenDashboard } from '@/components/screens/ScreenDashboard';
-
-export default function DashboardPage() {
-  const router = useRouter();
-  const go = useScreenNav();
-  const { data, loading, error, refresh } = useApi(() => api.listTransactions(), []);
-  const user = getStoredUser() ?? DEMO_USER;
-
-  return (
-    <AppShell>
-      {loading ? (
-        <LoadingState label="Loading your transactions…" />
-      ) : error ? (
-        <ErrorState message={error} onRetry={refresh} />
-      ) : (
-        <ScreenDashboard
-          go={go}
-          user={user}
-          transactions={data ?? []}
-          onOpen={(id) => router.push(`/transactions/${id}`)}
-        />
-      )}
-    </AppShell>
-  );
-}
+import { useEffect, useState } from 'react';import Link from 'next/link';import { api } from '@/lib/api-client';import type { TransactionCard as TxCard } from '@/types/domain';import { AppShell } from '@/components/workflow/AppShell';import { PageHeader } from '@/components/workflow/PageHeader';import { MetricCard } from '@/components/workflow/MetricCard';import { TransactionCard } from '@/components/workflow/TransactionCard';import { DeadlineAlert } from '@/components/workflow/DeadlineAlert';import { Button } from '@/components/workflow/Button';import { LoadingState } from '@/components/workflow/LoadingState';import { ErrorState } from '@/components/workflow/ErrorState';
+export default function DashboardPage(){const [cards,setCards]=useState<TxCard[]>([]);const [err,setErr]=useState('');useEffect(()=>{api.listTransactions().then(setCards).catch(e=>setErr(e.message))},[]);return <AppShell><PageHeader eyebrow="Brett’s cockpit" title="Today’s Colorado transactions"><Link href="/upload"><Button>Upload CTME PDF</Button></Link></PageHeader>{err?<ErrorState message={err}/>:!cards.length?<LoadingState label="Loading transactions…"/>:<><DeadlineAlert deadline={{id:'next',transactionId:cards[0].id,eventName:cards[0].next,applicability:'active',sourceDocumentId:'demo',createdAt:new Date().toISOString()}}/><section className="metric-grid"><MetricCard label="Active files" value={cards.length}/><MetricCard label="At risk" value={cards.filter(c=>c.urgent).length}/><MetricCard label="Avg progress" value={`${Math.round(cards.reduce((s,c)=>s+c.progress,0)/cards.length*100)}%`}/></section><section className="card-grid">{cards.map(c=><TransactionCard key={c.id} transaction={c}/>)}</section></>}</AppShell>}
