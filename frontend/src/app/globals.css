@@ -41,6 +41,13 @@
   --sh-1: 0 1px 0 rgba(20,34,63,.04), 0 1px 2px rgba(20,34,63,.05);
   --sh-2: 0 2px 4px rgba(20,34,63,.05), 0 8px 24px rgba(20,34,63,.07);
   --sh-3: 0 30px 70px rgba(20,34,63,.20), 0 0 0 1px rgba(20,34,63,.08);
+
+    /* Z-index scale — use these, never ad-hoc numbers */
+    --z-base: 0;
+    --z-raised: 10;
+    --z-overlay: 20;
+    --z-modal: 30;
+    --z-toast: 50;
 }
 
 [data-accent="#27518F"] {
@@ -197,6 +204,58 @@ html, body {
 
 button { font-family: inherit; color: inherit; }
 input, textarea { font-family: inherit; color: inherit; }
+
+/* Landing page nav ghost link */
+.nav-ghost-link {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.nav-ghost-link:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* Skip link — keyboard accessibility */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    z-index: var(--z-toast);
+    padding: .5rem 1rem;
+    background: var(--sage);
+    color: white;
+    border-radius: var(--r-sm);
+    font-size: .875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: top .15s;
+}
+
+.skip-link:focus {
+    top: 1rem;
+}
+
+/* Disable looping animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .alt-shimmer {
+        animation: none;
+        background: var(--line);
+    }
+
+    .alt-pulse {
+        animation: none;
+        opacity: 1;
+    }
+
+    .alt-spin {
+        animation: none;
+    }
+}
 
 /* Operations cockpit refactor */
 a { color: inherit; text-decoration: none; }

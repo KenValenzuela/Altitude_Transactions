@@ -26,8 +26,16 @@ export function ScreenPostClose({ go, detail = DEMO_DETAIL, onSetState }: Screen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail]);
 
+    const toCS = (s: TaskState | undefined): ChecklistState => {
+        const map: Partial<Record<string, ChecklistState>> = {
+            not_started: 'todo', in_progress: 'doing', complete: 'done', not_applicable: 'na',
+        };
+        if (!s) return 'todo';
+        return (map[s] ?? s) as ChecklistState;
+    };
+
   const cycle = (task: ApiTask) => {
-    const next = nextState(task.state) as TaskState;
+      const next = nextState(toCS(task.state)) as TaskState;
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, state: next } : t)));
     void onSetState?.(task.id, next);
   };

@@ -95,15 +95,15 @@ export function ScreenDeadlines({
                 {daysToClose}<span style={{ fontSize: 22, fontStyle: 'normal' }}>d</span>
               </div>
               <div style={{ fontSize: 13, color: 'rgba(244,239,227,.7)', marginTop: 6 }}>
-                {formatDateShort(closeDate)} · Settlement
+                  {formatDateShort(closeDate ?? null)} · Settlement
               </div>
             </div>
 
             <div style={{ position: 'relative', paddingLeft: 22 }}>
               <div style={{ position: 'absolute', left: 7, top: 8, bottom: 8, width: 1.5, background: 'var(--line)' }} />
               {dated.map((e) => {
-                const { mon, day, dow } = splitDate(e.date);
-                const until = daysUntil(e.date);
+                  const {mon, day, dow} = splitDate(e.date ?? null);
+                  const until = daysUntil(e.date ?? null);
                 return (
                   <div key={e.id} style={{ position: 'relative', paddingBottom: 14 }}>
                     <div style={{
@@ -129,7 +129,7 @@ export function ScreenDeadlines({
                       <div style={{ fontSize: 14, fontWeight: 500, marginTop: 4 }}>{e.event}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
                         <span className="alt-pill" style={{ background: 'var(--paper-2)', color: 'var(--ink-3)', fontFamily: 'var(--f-mono)', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                          {e.reference}
+                          {e.sectionReference}
                         </span>
                         {e.isUrgent && (
                           <span className="alt-pill" style={{ background: 'var(--clay-soft)', color: 'var(--clay)' }}>
@@ -173,7 +173,7 @@ export function ScreenDeadlines({
                     <div style={{ fontSize: 12, fontWeight: ev ? 600 : 400 }}>{dt || ''}</div>
                     {ev && (
                       <div style={{ width: '100%', fontSize: 8, lineHeight: 1.1, letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
-                        {ev.event.split(' ')[0]}
+                          {(ev.event ?? ev.eventName).split(' ')[0]}
                       </div>
                     )}
                   </div>
@@ -185,7 +185,11 @@ export function ScreenDeadlines({
               <div className="alt-card" style={{ padding: 0 }}>
                 {dated.slice(0, 4).map((e, i, a) => (
                   <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: i < a.length - 1 ? '0.5px solid var(--line)' : 'none' }}>
-                    <div className="alt-mono" style={{ fontSize: 11, color: 'var(--ink-3)', minWidth: 48 }}>{formatDateShort(e.date)}</div>
+                      <div className="alt-mono" style={{
+                          fontSize: 11,
+                          color: 'var(--ink-3)',
+                          minWidth: 48
+                      }}>{formatDateShort(e.date ?? null)}</div>
                     <div style={{ flex: 1, fontSize: 13 }}>{e.event}</div>
                     {e.isUrgent && <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--clay)', display: 'inline-block' }} />}
                   </div>

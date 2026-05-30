@@ -14,7 +14,11 @@ interface ScreenPartiesProps {
   title?: string;
 }
 
-export function ScreenParties({ go, parties = DEMO_DETAIL.parties, title = 'Parties' }: ScreenPartiesProps) {
+export function ScreenParties({
+                                  go,
+                                  parties = (DEMO_DETAIL.parties ?? []) as ApiParty[],
+                                  title = 'Parties'
+                              }: ScreenPartiesProps) {
   return (
     <>
       <TopBar
@@ -24,16 +28,16 @@ export function ScreenParties({ go, parties = DEMO_DETAIL.parties, title = 'Part
         trailing={<IconButton icon={Icon.plus()} label="Add"/>}
       />
       <div className="alt-screen-body alt-scroll" style={{ padding: '0 20px 40px' }}>
-        {parties.length === 0 && (
+          {(parties ?? []).length === 0 && (
           <div className="alt-card" style={{ padding: 16, fontSize: 13, color: 'var(--ink-3)' }}>
             No parties on this transaction yet.
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {parties.map((p) => (
+            {(parties ?? []).map((p) => (
             <div key={p.id} className="alt-card" style={{ padding: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Avatar initials={initialsFromName(p.name)} color={partyColor(p)} size={42}/>
+                  <Avatar initials={initialsFromName(p.name ?? '')} color={partyColor(p)} size={42}/>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="alt-eyebrow">{roleLabel(p.role)}</div>
                   <div style={{ fontSize: 15, fontWeight: 500, marginTop: 2 }}>{p.name}</div>
