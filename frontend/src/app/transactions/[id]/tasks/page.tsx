@@ -1,1 +1,6 @@
-'use client';import {useEffect,useState} from 'react';import {useParams} from 'next/navigation';import {api} from '@/lib/api-client';import type {Transaction,Task} from '@/types/domain';import {AppShell} from '@/components/workflow/AppShell';import {PageHeader} from '@/components/workflow/PageHeader';import {TaskChecklist} from '@/components/workflow/TaskChecklist';import {LoadingState} from '@/components/workflow/LoadingState';export default function Page(){const{id}=useParams<{id:string}>();const[tx,setTx]=useState<Transaction>();useEffect(()=>{api.getTransaction(id).then(setTx)},[id]);const toggle=(t:Task)=>api.updateTask(t.id,t.status==='complete'?'not_started':'complete').then(()=>api.getTransaction(id).then(setTx));return <AppShell><PageHeader eyebrow="Operational checklist" title="Generated tasks"/>{tx?<TaskChecklist groups={tx.tasks} onToggle={toggle}/>:<LoadingState/>}</AppShell>}
+import { redirect } from 'next/navigation';
+
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  redirect(`/transactions/${id}#tasks`);
+}

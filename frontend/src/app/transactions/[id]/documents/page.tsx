@@ -1,1 +1,6 @@
-'use client';import {useEffect,useState} from 'react';import {useParams} from 'next/navigation';import {api} from '@/lib/api-client';import type {Transaction} from '@/types/domain';import {AppShell} from '@/components/workflow/AppShell';import {PageHeader} from '@/components/workflow/PageHeader';import {DocumentRequirementList} from '@/components/workflow/DocumentRequirementList';import {LoadingState} from '@/components/workflow/LoadingState';export default function Page(){const{id}=useParams<{id:string}>();const[tx,setTx]=useState<Transaction>();useEffect(()=>{api.getTransaction(id).then(setTx)},[id]);return <AppShell><PageHeader eyebrow="Document checklist" title="Colorado transaction requirements"/>{tx?<DocumentRequirementList documents={tx.documentRequirements}/>:<LoadingState/>}</AppShell>}
+import { redirect } from 'next/navigation';
+
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  redirect(`/transactions/${id}#documents`);
+}

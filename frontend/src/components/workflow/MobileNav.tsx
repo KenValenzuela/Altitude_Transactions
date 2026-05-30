@@ -1,2 +1,21 @@
 import Link from 'next/link';
-export function MobileNav(){return <nav className="mobile-nav" aria-label="Primary"><Link href="/dashboard">Dashboard</Link><Link href="/upload">Upload</Link><Link href="/transactions/demo">Workspace</Link></nav>}
+
+const links = [
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/upload', label: 'Upload' },
+  { href: '/transactions/demo', label: 'Workspace' },
+];
+
+export function MobileNav() {
+  return (
+    <nav className="mobile-nav" aria-label="Primary navigation">
+      <ul>
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link href={link.href}>{link.label}</Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
