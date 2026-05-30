@@ -30,6 +30,24 @@ export type PopulationStatus =
   | 'superseded_by_amendment';
 
 export type ReviewStatus = 'pending' | 'approved' | 'edited' | 'rejected';
+
+/** WHY a field value is or is not present */
+export type AvailabilityStatus = 'available' | 'missing' | 'unavailable_now' | 'redacted' | 'unreadable';
+
+/** WHETHER the field applies to this specific transaction */
+export type ApplicabilityStatus = 'applicable' | 'not_applicable' | 'conditional' | 'unknown';
+
+/** Urgency tier for review triage */
+export type RequiredLevel = 'required_to_create' | 'required_before_closing' | 'optional' | 'informational';
+
+/** Broker's final decision — richer than ReviewStatus for UI routing */
+export type ReviewDecision =
+  | 'unreviewed'
+  | 'approved'
+  | 'edited'
+  | 'marked_not_applicable'
+  | 'marked_unavailable'
+  | 'rejected';
 export type PartyRole = 'buyer' | 'seller' | 'listing_agent' | 'lender' | 'title' | 'inspector';
 export type TaskStatus = 'not_started' | 'in_progress' | 'complete' | 'not_applicable' | 'todo' | 'doing' | 'done' | 'na';
 export type DeadlineApplicability = 'active' | 'not_applicable' | 'completed';
@@ -98,13 +116,43 @@ export interface ExtractedField {
   sourceDocumentId: string;
   sourcePage?: number;
   sourceSection?: string;
+  evidenceText?: string;
   confidence: number;
+  extractionMethod?: 'deterministic' | 'llm' | 'human_corrected' | 'imported' | 'fixture';
+  riskLevel?: 'low' | 'medium' | 'high';
+  valueType?: string;
+  // Multi-dimensional triage state
+  availabilityStatus: AvailabilityStatus;
+  applicabilityStatus: ApplicabilityStatus;
+  requiredLevel: RequiredLevel;
+  blocking: boolean;
+  reviewDecision: ReviewDecision;
+  userFacingMessage?: string;
+  suggestedAction?: string;
+  originalValue?: string;
+  editedValue?: string;
+  conflictOptions?: string;
+  // Legacy review fields
   populationStatus: PopulationStatus;
   reviewStatus: ReviewStatus | string;
   reviewedBy?: string;
   reviewedAt?: string;
+  rejectionReason?: string;
   createdAt: string;
   category?: string;
+}
+
+export interface ExtractionReviewSummary {
+  total: number;
+  blockingUnreviewed: number;
+  needsReview: number;
+  confirmedNa: number;
+  approved: number;
+  missingExpected: number;
+  lowConfidence: number;
+  conflicts: number;
+  canCreateTransaction: boolean;
+  estimatedReviewMinutes: number;
 }
 
 export interface Deadline {
@@ -117,6 +165,10 @@ export interface Deadline {
   dueTime?: string;
   rawValue?: string;
   applicability: DeadlineApplicability;
+  confidence?: number;
+  responsibleParty?: string;
+  calendarReady?: boolean;
+  humanReviewRequired?: boolean;
   sourceDocumentId: string;
   sourcePage?: number;
   sourceSection?: string;
@@ -138,6 +190,7 @@ export interface Task {
   completedAt?: string;
   assignedRole?: string;
   notes?: string;
+  notApplicableReason?: string;
   linkedDeadlineId?: string;
   sourceType?: string;
   createdAt?: string;
@@ -297,4 +350,5 @@ export interface ExtractionJob {
   fields: ExtractedField[];
   deadlines: Deadline[];
   flags: { title: string; detail: string }[];
+  reviewSummary?: ExtractionReviewSummary;
 }

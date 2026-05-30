@@ -28,9 +28,18 @@ export default function ExtractingPage() {
           router.replace(`/review/${documentId}`);
           return;
         }
+        // Partial extraction: route to review even if failed, unless truly empty
+        if (nextJob.status === 'failed') {
+          if (nextJob.fields.length > 0) {
+            router.replace(`/review/${documentId}`);
+          } else {
+            setError('Extraction could not read this PDF. Try uploading a text-based or higher-quality PDF.');
+          }
+          return;
+        }
         timeout = setTimeout(pollExtraction, 1500);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Extraction failed.');
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Unable to check extraction status.');
       }
     }
 

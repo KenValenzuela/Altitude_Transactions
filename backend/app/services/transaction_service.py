@@ -13,6 +13,57 @@ def _days(close: date | None) -> int:
     return (close - date.today()).days if close else 0
 
 
+def compute_review_summary(fields: list[ExtractedField]) -> ExtractionReviewSummary:
+    """Compute triage counts for the review UI summary panel."""
+    total = len(fields)
+    blocking_unreviewed = sum(
+        1 for f in fields if f.blocking and f.review_decision == "unreviewed"
+    )
+    confirmed_na = sum(
+        1 for f in fields
+        if f.review_decision == "marked_not_applicable"
+        or f.applicability_status == "not_applicable"
+    )
+    approved = sum(
+        1 for f in fields if f.review_decision in ("approved", "edited", "marked_unavailable")
+    )
+    missing_expected = sum(
+        1 for f in fields
+        if f.availability_status == "missing"
+        and f.review_decision == "unreviewed"
+    )
+    low_confidence = sum(
+        1 for f in fields
+        if f.confidence < 0.85
+        and f.availability_status == "available"
+        and f.review_decision == "unreviewed"
+    )
+    conflicts = sum(
+        1 for f in fields
+        if f.conflict_options and f.review_decision == "unreviewed"
+    )
+    needs_review = sum(
+        1 for f in fields
+        if f.review_decision == "unreviewed"
+        and f.applicability_status != "not_applicable"
+    )
+    can_create = blocking_unreviewed == 0
+    # ~45 seconds per field needing review
+    est_minutes = max(1, round(needs_review * 0.75))
+    return ExtractionReviewSummary(
+        total=total,
+        blocking_unreviewed=blocking_unreviewed,
+        needs_review=needs_review,
+        confirmed_na=confirmed_na,
+        approved=approved,
+        missing_expected=missing_expected,
+        low_confidence=low_confidence,
+        conflicts=conflicts,
+        can_create_transaction=can_create,
+        estimated_review_minutes=est_minutes,
+    )
+
+
 def _task_out(t: Task) -> TaskOut:
     state_map = {"not_started":"todo", "in_progress":"doing", "complete":"done", "not_applicable":"na"}
     return TaskOut.model_validate({**t.model_dump(), "group": t.category, "due": t.due_date.isoformat() if t.due_date else None, "state": state_map.get(t.status.value, t.status.value), "ai_note": t.notes, "is_post_close": t.category == "post_close"})

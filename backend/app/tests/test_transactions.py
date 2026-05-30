@@ -51,9 +51,14 @@ def test_transaction_deadlines_endpoint(client):
     assert resp.status_code == 200
     deadlines = resp.json()
     assert len(deadlines) > 0
-    # N/A deadlines were skipped during build
+    # N/A deadlines (Lead-Based Paint, Water Rights, etc.) are stored but marked not_applicable.
+    # "Closing Date" is a contract field (§12), not a CTME Dates & Deadlines row.
     events = {d["event"] for d in deadlines}
-    assert "Closing Date" in events
+    assert "Appraisal Deadline" in events
+    assert "Inspection Objection Deadline" in events
+    # N/A deadlines should be present with not_applicable applicability.
+    na_deadlines = [d for d in deadlines if d.get("isNa") or d.get("applicability") == "not_applicable"]
+    assert len(na_deadlines) > 0
 
 
 def test_transaction_404(client):

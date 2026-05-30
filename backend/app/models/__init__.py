@@ -1,4 +1,4 @@
-"""Altitude workflow SQLModel tables for the custom CTME demo."""
+"""Altitude workflow SQLModel tables for the Altitude Transactions custom build."""
 from __future__ import annotations
 
 import datetime as dt
@@ -89,6 +89,41 @@ class ReceivedStatus(str, Enum):
     approved = "approved"
 
 
+class AvailabilityStatus(str, Enum):
+    """WHY a field value is or is not present."""
+    available = "available"
+    missing = "missing"
+    unavailable_now = "unavailable_now"
+    redacted = "redacted"
+    unreadable = "unreadable"
+
+
+class ApplicabilityStatus(str, Enum):
+    """WHETHER the field applies to this specific transaction."""
+    applicable = "applicable"
+    not_applicable = "not_applicable"
+    conditional = "conditional"
+    unknown = "unknown"
+
+
+class RequiredLevel(str, Enum):
+    """Urgency tier: blocks workspace creation vs. blocks closing vs. optional."""
+    required_to_create = "required_to_create"
+    required_before_closing = "required_before_closing"
+    optional = "optional"
+    informational = "informational"
+
+
+class ReviewDecision(str, Enum):
+    """Broker's final decision on a field — more specific than ReviewStatus."""
+    unreviewed = "unreviewed"
+    approved = "approved"
+    edited = "edited"
+    marked_not_applicable = "marked_not_applicable"
+    marked_unavailable = "marked_unavailable"
+    rejected = "rejected"
+
+
 class User(SQLModel, table=True):
     id: str = Field(default_factory=_uuid, primary_key=True)
     name: str
@@ -139,12 +174,15 @@ class ExtractionRun(SQLModel, table=True):
     transaction_id: str | None = Field(default=None, foreign_key="transaction.id", index=True)
     source_document_id: str = Field(foreign_key="source_documents.id", index=True)
     status: ExtractionStatus = Field(default=ExtractionStatus.needs_review)
+    stage: str = "completed"
+    provider: str = "FixtureExtractionProvider"
     started_at: datetime = Field(default_factory=_now)
     completed_at: datetime | None = None
-    model_name: str = "deterministic-ctme-demo"
-    schema_version: str = "altitude-demo-v1"
+    model_name: str = "fixture-extraction-provider-v1"
+    schema_version: str = "altitude-ctme-v1"
     error_message: str | None = None
     progress_percent: int = 100
+    metrics_json: str | None = None
 
 
 class ExtractedField(SQLModel, table=True):
@@ -159,11 +197,33 @@ class ExtractedField(SQLModel, table=True):
     source_document_id: str = Field(foreign_key="source_documents.id", index=True)
     source_page: int | None = None
     source_section: str | None = None
+    evidence_text: str | None = None
     confidence: float = 1.0
+    extraction_method: str = "fixture"
+    risk_level: str | None = None
+    value_type: str | None = None
+    # Multi-dimensional classification for human review triage
+    availability_status: str = "available"
+    applicability_status: str = "applicable"
+    required_level: str = "optional"
+    blocking: bool = False
+    # Review decision — richer than review_status for UI routing
+    review_decision: str = "unreviewed"
+    # User-facing guidance (plain English, not parser terms)
+    user_facing_message: str | None = None
+    suggested_action: str | None = None
+    # Value history
+    original_value: str | None = None
+    edited_value: str | None = None
+    # Parser metadata (not user-facing)
+    parser_message: str | None = None
+    conflict_options: str | None = None
+    # Legacy review fields
     population_status: PopulationStatus = Field(default=PopulationStatus.populated)
     review_status: ReviewStatus = Field(default=ReviewStatus.pending)
     reviewed_by: str | None = None
     reviewed_at: datetime | None = None
+    rejection_reason: str | None = None
     created_at: datetime = Field(default_factory=_now)
 
 
@@ -177,6 +237,10 @@ class Deadline(SQLModel, table=True):
     due_time: str | None = None
     raw_value: str | None = None
     applicability: DeadlineApplicability = Field(default=DeadlineApplicability.active)
+    confidence: float = 1.0
+    responsible_party: str | None = None
+    calendar_ready: bool = False
+    human_review_required: bool = False
     source_document_id: str = Field(foreign_key="source_documents.id", index=True)
     source_page: int | None = None
     source_section: str | None = None
@@ -194,6 +258,7 @@ class Task(SQLModel, table=True):
     completed_at: datetime | None = None
     assigned_role: str | None = None
     notes: str | None = None
+    not_applicable_reason: str | None = None
     linked_deadline_id: str | None = Field(default=None, foreign_key="deadline.id")
     source_type: str = "generated_from_deadline"
     created_at: datetime = Field(default_factory=_now)

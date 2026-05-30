@@ -100,10 +100,30 @@ export const api = {
   getExtractionRun: (runId: string) => request<ExtractionJob>(`/extractions/${runId}`),
   confirmExtraction: (jobId: string, body: ConfirmExtractionRequest = {}) =>
     request<Transaction>(`/extractions/${jobId}/confirm`, { method: 'POST', body: JSON.stringify(body) }),
-  approveField: (id: string, value?: string) =>
+  approveField: (id: string) =>
     request<ExtractedField>(`/extracted-fields/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(value ? { action: 'edit', value } : { action: 'approve' }),
+      body: JSON.stringify({ decision: 'approve' }),
+    }),
+  editField: (id: string, value: string) =>
+    request<ExtractedField>(`/extracted-fields/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ decision: 'edit', value }),
+    }),
+  markFieldNA: (id: string, reason?: string) =>
+    request<ExtractedField>(`/extracted-fields/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ decision: 'mark_not_applicable', reason }),
+    }),
+  markFieldUnavailable: (id: string, reason?: string) =>
+    request<ExtractedField>(`/extracted-fields/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ decision: 'mark_unavailable', unavailable_reason: reason }),
+    }),
+  rejectField: (id: string, reason?: string) =>
+    request<ExtractedField>(`/extracted-fields/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ decision: 'reject', reason }),
     }),
   updateTask: (id: string, state: TaskState) =>
     request<ApiTask>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ state }) }),

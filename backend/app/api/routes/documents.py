@@ -34,7 +34,7 @@ def patch_document(document_id: str, patch: DocumentPatch, user: User = Depends(
 from sqlmodel import select
 from app.models import ExtractionRun, ExtractedField, Deadline
 from app.schemas import ExtractionJobOut, ExtractedFieldOut, ExtractionFlag
-from app.services.transaction_service import _deadline_out
+from app.services.transaction_service import _deadline_out, compute_review_summary
 
 @router.get("/{document_id}/extraction", response_model=ExtractionJobOut)
 def get_document_extraction(document_id: str, user: User = Depends(get_current_user), session: Session = Depends(get_session)):
@@ -43,4 +43,15 @@ def get_document_extraction(document_id: str, user: User = Depends(get_current_u
         raise HTTPException(status_code=404, detail="Extraction job not found")
     fields = session.exec(select(ExtractedField).where(ExtractedField.extraction_run_id == run.id)).all()
     deadlines = session.exec(select(Deadline).where(Deadline.transaction_id == run.transaction_id)).all() if run.transaction_id else []
-    return ExtractionJobOut(id=run.id, status="complete" if run.status.value == "needs_review" else run.status.value, progress_percent=run.progress_percent, transaction_id=run.transaction_id, source_document_id=run.source_document_id, fields=[ExtractedFieldOut.model_validate({**f.model_dump(), "category": f.source_section}) for f in fields], deadlines=[_deadline_out(d) for d in deadlines], flags=[ExtractionFlag(title="Additional Provision §30", detail="Additional provisions detected and preserved for broker review.")])
+    field_outs = [ExtractedFieldOut.model_validate({**f.model_dump(), "category": f.source_section}) for f in fields]
+    return ExtractionJobOut(
+        id=run.id,
+        status="complete" if run.status.value == "needs_review" else run.status.value,
+        progress_percent=run.progress_percent,
+        transaction_id=run.transaction_id,
+        source_document_id=run.source_document_id,
+        fields=field_outs,
+        deadlines=[_deadline_out(d) for d in deadlines],
+        flags=[ExtractionFlag(title="Additional Provision §30", detail="Additional provisions detected and preserved for broker review.")],
+        review_summary=compute_review_summary(list(fields)),
+    )

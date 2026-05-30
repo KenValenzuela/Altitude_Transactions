@@ -17,7 +17,17 @@ def start_extraction(body: dict, user: User = Depends(get_current_user), session
     doc = session.get(SourceDocument, source_document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Source document not found")
-    run = ExtractionRun(source_document_id=doc.id, transaction_id=doc.transaction_id, status=ExtractionStatus.needs_review, completed_at=__import__('datetime').datetime.now(__import__('datetime').timezone.utc), progress_percent=100)
+    from datetime import datetime, timezone as _tz
+    run = ExtractionRun(
+        source_document_id=doc.id, transaction_id=doc.transaction_id,
+        status=ExtractionStatus.needs_review,
+        provider="FixtureExtractionProvider",
+        model_name="fixture-extraction-provider-v1",
+        schema_version="altitude-ctme-v1",
+        stage="completed",
+        completed_at=datetime.now(_tz.utc),
+        progress_percent=100,
+    )
     session.add(run); session.commit(); session.refresh(run)
     return get_run(run.id, user, session)
 
@@ -26,7 +36,14 @@ def get_run(run_id: str, user: User = Depends(get_current_user), session: Sessio
     run = session.get(ExtractionRun, run_id)
     if not run: raise HTTPException(status_code=404, detail="Extraction run not found")
     fields = session.exec(select(ExtractedField).where(ExtractedField.extraction_run_id == run.id)).all()
-    return ExtractionJobOut(id=run.id, status=run.status.value, progress_percent=run.progress_percent, transaction_id=run.transaction_id, source_document_id=run.source_document_id, fields=[ExtractedFieldOut.model_validate({**f.model_dump(), "category": f.source_section}) for f in fields], deadlines=[], flags=[ExtractionFlag(title="Additional Provision §30", detail="Additional provisions detected and preserved for broker review.")])
+    field_outs = [ExtractedFieldOut.model_validate({**f.model_dump(), "category": f.source_section}) for f in fields]
+    return ExtractionJobOut(
+        id=run.id, status=run.status.value, progress_percent=run.progress_percent,
+        transaction_id=run.transaction_id, source_document_id=run.source_document_id,
+        fields=field_outs, deadlines=[],
+        flags=[ExtractionFlag(title="Additional Provision §30", detail="Additional provisions detected and preserved for broker review.")],
+        review_summary=transaction_service.compute_review_summary(list(fields)),
+    )
 
 @router.get("/{run_id}/events")
 def run_events(run_id: str):

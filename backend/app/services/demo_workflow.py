@@ -1,6 +1,18 @@
+"""Fixture extraction provider and transaction materialization.
+
+This module is the SANDBOX / FIXTURE implementation of the extraction pipeline.
+It does NOT perform real OCR or LLM extraction. It replays a pre-structured extraction
+of a real Colorado CBS contract (4902 Cherry Springs Drive, El Paso County) so the
+full human-in-the-loop review workflow can operate with source-grounded data.
+
+To productionize: implement the ExtractionService Protocol in extraction_service.py
+and swap the instance returned by get_extraction_service(). This module becomes
+the FixtureExtractionProvider for sandbox/testing.
+"""
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import date, datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -16,6 +28,14 @@ from app.models import (
 )
 
 
+def _risk_for_confidence(conf: float) -> str:
+    if conf < 0.5:
+        return "high"
+    if conf < 0.85:
+        return "medium"
+    return "low"
+
+
 def d(s: str | None) -> date | None:
     if not s or s in {"N/A", "COMPLETED", "Deleted"} or ":" in s:
         return None
@@ -23,6 +43,7 @@ def d(s: str | None) -> date | None:
     return date(int(y), int(m), int(day))
 
 FIELD_DATA = [
+    # (key, label, value, normalized, page, section, confidence, population_status)
     ("property_address", "Property Address", "4902 Cherry Springs Drive, Colorado Springs, CO 80923", "4902 Cherry Springs Drive, Colorado Springs, CO 80923", 2, "§2.1 Property", .99, "populated"),
     ("county", "County", "El Paso", "El Paso", 2, "§2.1 County", .98, "populated"),
     ("legal_description", "Legal Description", "LOT 3 WAGON TRAILS SUB FIL NO 21 PLAT 10743", "LOT 3 WAGON TRAILS SUB FIL NO 21 PLAT 10743", 2, "§2.2 Legal Description", .96, "populated"),
@@ -46,9 +67,218 @@ FIELD_DATA = [
     ("closing_date", "Closing Date", "11/20/2025", "2025-11-20", 12, "§12 Closing", .98, "populated"),
     ("possession_date", "Possession Date", "11/20/2025", "2025-11-20", 12, "§17 Possession", .96, "populated"),
     ("possession_time", "Possession Time", "Time of Closing/Funding", None, 12, "§17 Possession", .95, "populated"),
-    ("lead_based_paint_disclosure", "Lead-Based Paint Disclosure Deadline", "N/A", None, 6, "Dates and Deadlines", .99, "not_applicable"),
+    ("lead_based_paint_disclosure", "Lead-Based Paint Disclosure", "N/A", None, 6, "Dates and Deadlines", .99, "not_applicable"),
     ("new_loan_application_deadline", "New Loan Application Deadline", "COMPLETED", None, 6, "Dates and Deadlines", .99, "completed"),
+    # --- Additional fields demonstrating diverse extraction states ---
+    # Low confidence: terms were in a dense block; value is likely correct but warrants review
+    ("seller_concession_terms", "Seller Concession Terms", "Closing costs per §4.2 (buyer to pay standard)", None, 4, "§4.2 Seller Concession", .62, "populated"),
+    # Missing — required before closing: loan officer was not in this version of the contract
+    ("loan_officer_name", "Loan Officer", None, None, None, "§5 Financing", 0.0, "missing_required"),
+    # Conditional N/A: §7 Association Documents not applicable to this property
+    ("hoa_monthly_assessment", "HOA Monthly Assessment", "N/A", None, 7, "§7 Association Documents", .97, "not_applicable"),
 ]
+
+
+# Enriched metadata for each field key. Drives triage UI: required level, availability, messages.
+FIELD_META: dict[str, dict] = {
+    "property_address": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "Property address found with high confidence.",
+        "suggested_action": "Verify the address is complete and correct, then approve.",
+    },
+    "county": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "Colorado county found with high confidence.",
+        "suggested_action": "Approve if correct.",
+    },
+    "legal_description": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "Legal description found. Compare with the title commitment.",
+        "suggested_action": "Approve or correct if it differs from the title commitment.",
+    },
+    "contract_date": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "date",
+        "user_facing_message": "Contract date found with high confidence.",
+        "suggested_action": "Approve if this matches the signed offer date.",
+    },
+    "brokerage": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "Brokerage name found from the broker acknowledgment section.",
+        "suggested_action": "Approve if correct.",
+    },
+    "broker": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "name",
+        "user_facing_message": "Broker name found from the broker acknowledgment section.",
+        "suggested_action": "Approve if this is the correct agent of record.",
+    },
+    "broker_email": {
+        "required_level": "required_before_closing", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "email",
+        "user_facing_message": "Broker email found from the broker acknowledgment section.",
+        "suggested_action": "Approve or correct.",
+    },
+    "broker_phone": {
+        "required_level": "required_before_closing", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "phone",
+        "user_facing_message": "Broker phone found from the broker acknowledgment section.",
+        "suggested_action": "Approve or correct.",
+    },
+    "purchase_price": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "money",
+        "user_facing_message": "Purchase price found with high confidence at §4.",
+        "suggested_action": "Verify this matches the signed contract price, then approve.",
+    },
+    "earnest_money": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "money",
+        "user_facing_message": "Earnest money amount found at §4.3.",
+        "suggested_action": "Approve if this matches the earnest money agreed upon.",
+    },
+    "new_loan": {
+        "required_level": "required_before_closing", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "money",
+        "user_facing_message": "New loan amount found at §4.5.",
+        "suggested_action": "Approve or correct against the loan commitment.",
+    },
+    "cash_at_closing": {
+        "required_level": "required_before_closing", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "money",
+        "user_facing_message": "Cash at closing amount found at §4.6.",
+        "suggested_action": "Approve or correct.",
+    },
+    "seller_concession": {
+        "required_level": "required_before_closing", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "money",
+        "user_facing_message": "Seller concession found at §4.2.",
+        "suggested_action": "Approve or correct.",
+    },
+    "earnest_money_holder": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "Earnest money holder (title company) found at §4.3.",
+        "suggested_action": "Approve if this is the correct title company.",
+    },
+    "other_inclusions": {
+        "required_level": "optional", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "list",
+        "user_facing_message": "Personal property inclusions found at §2.5.",
+        "suggested_action": "Approve the list or edit to match the contract.",
+    },
+    "exclusions": {
+        "required_level": "optional", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "list",
+        "user_facing_message": "Exclusions found at §2.6.",
+        "suggested_action": "Approve or correct.",
+    },
+    "parking": {
+        "required_level": "informational", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "Parking information found at §2.5.",
+        "suggested_action": "Approve if correct. Not required to create the workspace.",
+    },
+    "storage": {
+        "required_level": "informational", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "Storage information found at §2.5.",
+        "suggested_action": "Approve if correct. Not required to create the workspace.",
+    },
+    "buyer_name": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "redacted", "applicability_status": "applicable",
+        "value_type": "name",
+        "user_facing_message": "Buyer name is redacted in this version of the contract.",
+        "suggested_action": "Enter the buyer's legal name as it appears in the unredacted contract.",
+    },
+    "seller_name": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "redacted", "applicability_status": "applicable",
+        "value_type": "name",
+        "user_facing_message": "Seller name is redacted in this version of the contract.",
+        "suggested_action": "Enter the seller's legal name as it appears in the unredacted contract.",
+    },
+    "closing_date": {
+        "required_level": "required_to_create", "blocking": True,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "date",
+        "user_facing_message": "Closing date found at §12.",
+        "suggested_action": "Approve or correct. This drives all deadline calculations.",
+    },
+    "possession_date": {
+        "required_level": "required_before_closing", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "date",
+        "user_facing_message": "Possession date found at §17.",
+        "suggested_action": "Approve or correct.",
+    },
+    "possession_time": {
+        "required_level": "optional", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "Possession time found at §17.",
+        "suggested_action": "Approve if correct.",
+    },
+    "lead_based_paint_disclosure": {
+        "required_level": "informational", "blocking": False,
+        "availability_status": "available", "applicability_status": "not_applicable",
+        "value_type": "text",
+        "user_facing_message": "Lead-Based Paint Disclosure is marked N/A in this contract. This typically applies to homes built before 1978.",
+        "suggested_action": "Confirm as N/A if the home was built after 1977.",
+    },
+    "new_loan_application_deadline": {
+        "required_level": "informational", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "New loan application was completed prior to contract execution. No outstanding deadline.",
+        "suggested_action": "No action needed — already completed.",
+    },
+    # Diverse-state fields
+    "seller_concession_terms": {
+        "required_level": "required_before_closing", "blocking": False,
+        "availability_status": "available", "applicability_status": "applicable",
+        "value_type": "text",
+        "user_facing_message": "Seller concession terms were found with lower than usual confidence. The source text in this area was dense.",
+        "suggested_action": "Review page 4, §4.2 to confirm this accurately describes the concession arrangement.",
+    },
+    "loan_officer_name": {
+        "required_level": "required_before_closing", "blocking": False,
+        "availability_status": "missing", "applicability_status": "applicable",
+        "value_type": "name",
+        "user_facing_message": "Loan officer name was not found in this contract. This is common — loan officer details are often added separately.",
+        "suggested_action": "Add the loan officer's name now, or mark as 'Get later' to create a follow-up task.",
+    },
+    "hoa_monthly_assessment": {
+        "required_level": "optional", "blocking": False,
+        "availability_status": "available", "applicability_status": "not_applicable",
+        "value_type": "money",
+        "user_facing_message": "HOA Association Documents section (§7) does not appear to apply to this property.",
+        "suggested_action": "Confirm N/A if this property has no homeowner association.",
+    },
+}
 
 DEADLINE_DATA = [
     ("1", "§3", "Time of Day Deadline", None, "7:00 PM MT"), ("2", "§4.3", "Alternative Earnest Money Deadline", "10/28/2025", None),
@@ -122,13 +352,23 @@ def create_source_document(session: Session, user: User, filename: str, content_
     Path(storage).write_bytes(data)
     doc = SourceDocument(id=doc_id, transaction_id=transaction_id, filename=filename, mime_type=content_type, file_size_bytes=len(data), storage_path=storage, sha256_hash=hashlib.sha256(data).hexdigest(), uploaded_by=user.id)
     session.add(doc); session.commit(); session.refresh(doc)
-    run = ExtractionRun(source_document_id=doc.id, transaction_id=transaction_id, status=ExtractionStatus.needs_review, completed_at=datetime.now(timezone.utc), progress_percent=100)
+    run = ExtractionRun(
+        source_document_id=doc.id, transaction_id=transaction_id,
+        status=ExtractionStatus.needs_review,
+        provider="FixtureExtractionProvider",
+        model_name="fixture-extraction-provider-v1",
+        schema_version="altitude-ctme-v1",
+        stage="completed",
+        completed_at=datetime.now(timezone.utc),
+        progress_percent=100,
+    )
     session.add(run); session.commit(); session.refresh(run)
-    if transaction_id:
-        materialize_extraction(session, run, doc, user.id)
-    audit(session, transaction_id, "document_uploaded", "source_document", doc.id, after=filename, actor_id=user.id)
-    audit(session, transaction_id, "extraction_started", "extraction_run", run.id, actor_id=user.id)
-    audit(session, transaction_id, "extraction_completed", "extraction_run", run.id, after="needs_review", actor_id=user.id)
+    # Always materialize extraction synchronously — the FixtureExtractionProvider
+    # is synchronous. A live OCR/LLM provider would defer this to a background job
+    # and update ExtractionRun.status asynchronously.
+    materialize_extraction(session, run, doc, user.id)
+    # document_uploaded audit is additive; extraction audits are emitted inside materialize_extraction.
+    audit(session, run.transaction_id, "document_uploaded", "source_document", doc.id, after=filename, actor_id=user.id)
     session.commit()
     return doc, run
 
@@ -138,17 +378,76 @@ def materialize_extraction(session: Session, run: ExtractionRun, doc: SourceDocu
     if not tx:
         tx = create_transaction(session, owner_id)
         run.transaction_id = tx.id; doc.transaction_id = tx.id
-    for key,label,value,norm,page,section,conf,status in FIELD_DATA:
-        field = ExtractedField(transaction_id=tx.id, extraction_run_id=run.id, field_key=key, label=label, value=value, normalized_value=norm, source_document_id=doc.id, source_page=page, source_section=section, confidence=conf, population_status=PopulationStatus(status), review_status=ReviewStatus.pending)
+    fields_created: list[ExtractedField] = []
+    for key, label, value, norm, page, section, conf, pop_status in FIELD_DATA:
+        meta = FIELD_META.get(key, {})
+        # Determine availability_status from population status and meta
+        if meta.get("availability_status"):
+            avail = meta["availability_status"]
+        elif pop_status == "redacted_in_source":
+            avail = "redacted"
+        elif pop_status == "missing_required" or (value is None and pop_status not in ("not_applicable", "completed")):
+            avail = "missing"
+        else:
+            avail = "available"
+        # review_decision: N/A fields auto-resolve; others start unreviewed
+        applic = meta.get("applicability_status", "applicable")
+        if pop_status in ("not_applicable",) or applic == "not_applicable":
+            review_dec = "marked_not_applicable"
+        elif pop_status == "completed":
+            review_dec = "approved"
+        else:
+            review_dec = "unreviewed"
+        field = ExtractedField(
+            transaction_id=tx.id, extraction_run_id=run.id,
+            field_key=key, label=label, value=value, normalized_value=norm,
+            source_document_id=doc.id, source_page=page, source_section=section,
+            evidence_text=meta.get("user_facing_message") or f"Extracted from {section}, page {page}.",
+            confidence=conf,
+            extraction_method="fixture",
+            risk_level=_risk_for_confidence(conf),
+            value_type=meta.get("value_type"),
+            availability_status=avail,
+            applicability_status=applic,
+            required_level=meta.get("required_level", "optional"),
+            blocking=meta.get("blocking", False),
+            review_decision=review_dec,
+            user_facing_message=meta.get("user_facing_message"),
+            suggested_action=meta.get("suggested_action"),
+            population_status=PopulationStatus(pop_status),
+            review_status=ReviewStatus.pending if review_dec == "unreviewed" else ReviewStatus.approved,
+        )
         session.add(field)
+        fields_created.append(field)
+
     last_time = "7:00 PM MT"
     for item, ref, name, raw, time in DEADLINE_DATA:
         raw_value = raw or time
         app = DeadlineApplicability.active
-        if raw == "N/A": app = DeadlineApplicability.not_applicable
-        if raw == "COMPLETED": app = DeadlineApplicability.completed
-        dl = Deadline(transaction_id=tx.id, item_number=item, section_reference=ref, event_name=name, due_date=d(raw), due_time=time or (last_time if raw and app == DeadlineApplicability.active else None), raw_value=raw_value, applicability=app, source_document_id=doc.id, source_page=6, source_section="Dates and Deadlines")
-        session.add(dl); session.flush()
+        if raw == "N/A":
+            app = DeadlineApplicability.not_applicable
+        if raw == "COMPLETED":
+            app = DeadlineApplicability.completed
+        has_date = d(raw) is not None
+        resp_party = (
+            "buyer_broker" if any(k in name for k in ("Inspection", "Appraisal", "Loan", "ILC", "Survey"))
+            else "listing_broker" if "Seller" in name or "Acceptance" in name
+            else "title_company" if "Title" in name or "Association" in name
+            else "buyer_broker"
+        )
+        dl = Deadline(
+            transaction_id=tx.id, item_number=item, section_reference=ref, event_name=name,
+            due_date=d(raw),
+            due_time=time or (last_time if raw and app == DeadlineApplicability.active else None),
+            raw_value=raw_value, applicability=app,
+            confidence=1.0,
+            responsible_party=resp_party if app == DeadlineApplicability.active else None,
+            calendar_ready=has_date and app == DeadlineApplicability.active,
+            human_review_required=False,
+            source_document_id=doc.id, source_page=6, source_section="Dates and Deadlines",
+        )
+        session.add(dl)
+        session.flush()
         if name in TASK_MAP:
             category = "inspection" if "Inspection" in name else "loan" if "Loan" in name or "Appraisal" in name else "title" if "Title" in name else "due_diligence"
             task = Task(transaction_id=tx.id, title=TASK_MAP[name], category=category, due_date=dl.due_date, linked_deadline_id=dl.id, status=TaskStatus.not_started, assigned_role="buyer_broker", notes="Generated from CTME deadline; not complete until Brett confirms or document is reviewed.")
@@ -164,6 +463,26 @@ def materialize_extraction(session: Session, run: ExtractionRun, doc: SourceDocu
         session.add(DocumentRequirement(transaction_id=tx.id, document_name=name, category=cat, purpose=purpose, required_status=req, received_status=ReceivedStatus(recv), source_document_id=doc.id if name == "Contract to Buy and Sell Real Estate" else None, due_date=tx.closing_date if cat in {"closing","post_closing"} else None))
     for title in POST_CLOSE:
         session.add(PostCloseTask(transaction_id=tx.id, title=title, recipient_role=title.split(" to ")[-1].lower().replace(" ", "_") if " to " in title else "client", status=TaskStatus.not_started))
+    low_conf = [f for f in fields_created if f.confidence < 0.85]
+    missing_req = [f for f in fields_created if f.population_status == PopulationStatus.missing_required]
+    na_fields = [f for f in fields_created if f.population_status == PopulationStatus.not_applicable]
+    active_deadlines = [item for _, _, _, raw, _ in DEADLINE_DATA if raw not in ("N/A", "COMPLETED", None) and d(raw) is not None]
+    metrics = {
+        "fields_extracted": len(fields_created),
+        "fields_requiring_review": len(fields_created),
+        "low_confidence_count": len(low_conf),
+        "missing_required_count": len(missing_req),
+        "deadlines_extracted": len(DEADLINE_DATA),
+        "active_deadlines": len(active_deadlines),
+        "na_count": len(na_fields),
+        "extraction_coverage_pct": round(len([f for f in fields_created if f.value]) / len(fields_created) * 100) if fields_created else 0,
+        "provider": "FixtureExtractionProvider",
+        "source": "sample_contract_extraction.json",
+    }
+    run.metrics_json = json.dumps(metrics)
+    run.provider = "FixtureExtractionProvider"
+    run.stage = "completed"
+
     audit(session, tx.id, "extraction_completed", "extraction_run", run.id, after="needs_review", actor_id=owner_id)
     session.add(tx); session.add(run); session.add(doc); session.commit(); session.refresh(tx); return tx
 

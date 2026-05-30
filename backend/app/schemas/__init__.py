@@ -42,12 +42,15 @@ class ExtractionRunOut(CamelModel):
     transaction_id: str | None = None
     source_document_id: str
     status: str
+    stage: str = "completed"
+    provider: str = "FixtureExtractionProvider"
     started_at: dt.datetime
     completed_at: dt.datetime | None = None
     model_name: str
     schema_version: str
     error_message: str | None = None
     progress_percent: int
+    metrics_json: str | None = None
 
 
 class ExtractedFieldOut(CamelModel):
@@ -61,11 +64,28 @@ class ExtractedFieldOut(CamelModel):
     source_document_id: str
     source_page: int | None = None
     source_section: str | None = None
+    evidence_text: str | None = None
     confidence: float
+    extraction_method: str = "fixture"
+    risk_level: str | None = None
+    value_type: str | None = None
+    # Multi-dimensional triage state
+    availability_status: str = "available"
+    applicability_status: str = "applicable"
+    required_level: str = "optional"
+    blocking: bool = False
+    review_decision: str = "unreviewed"
+    user_facing_message: str | None = None
+    suggested_action: str | None = None
+    original_value: str | None = None
+    edited_value: str | None = None
+    conflict_options: str | None = None
+    # Legacy review fields
     population_status: str
     review_status: str
     reviewed_by: str | None = None
     reviewed_at: dt.datetime | None = None
+    rejection_reason: str | None = None
     created_at: dt.datetime
     # Legacy-friendly optional field used by old screen grouping.
     category: str | None = None
@@ -81,6 +101,10 @@ class DeadlineOut(CamelModel):
     due_time: str | None = None
     raw_value: str | None = None
     applicability: str
+    confidence: float = 1.0
+    responsible_party: str | None = None
+    calendar_ready: bool = False
+    human_review_required: bool = False
     source_document_id: str
     source_page: int | None = None
     source_section: str | None = None
@@ -105,6 +129,7 @@ class TaskOut(CamelModel):
     completed_at: dt.datetime | None = None
     assigned_role: str | None = None
     notes: str | None = None
+    not_applicable_reason: str | None = None
     linked_deadline_id: str | None = None
     source_type: str
     created_at: dt.datetime
@@ -285,6 +310,20 @@ class ExtractionFlag(CamelModel):
     detail: str
 
 
+class ExtractionReviewSummary(CamelModel):
+    """Pre-computed triage counts for the review UI summary panel."""
+    total: int = 0
+    blocking_unreviewed: int = 0
+    needs_review: int = 0
+    confirmed_na: int = 0
+    approved: int = 0
+    missing_expected: int = 0
+    low_confidence: int = 0
+    conflicts: int = 0
+    can_create_transaction: bool = False
+    estimated_review_minutes: int = 0
+
+
 class ExtractionJobOut(CamelModel):
     id: str
     status: str
@@ -294,6 +333,7 @@ class ExtractionJobOut(CamelModel):
     fields: list[ExtractedFieldOut] = []
     deadlines: list[DeadlineOut] = []
     flags: list[ExtractionFlag] = []
+    review_summary: ExtractionReviewSummary | None = None
 
 
 class ConfirmRequest(CamelModel):
@@ -308,8 +348,11 @@ class TaskPatch(CamelModel):
 
 
 class FieldPatch(CamelModel):
-    action: str = "approve"
+    action: str = "approve"  # legacy — prefer decision
+    decision: str | None = None  # approve | edit | mark_not_applicable | mark_unavailable | reject
     value: str | None = None
+    reason: str | None = None
+    unavailable_reason: str | None = None
 
 
 class ContactPatch(CamelModel):

@@ -38,22 +38,23 @@ export default function LandingPage() {
                     <Link href="/" aria-label="Altitude — home"
                           style={{display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none'}}>
                         <div style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 8,
-                            background: 'var(--gold-metallic)',
+                            width: 34,
+                            height: 34,
+                            borderRadius: 9,
+                            background: 'linear-gradient(150deg,#E7CB7E 0%,#C9A14A 45%,#9C7726 78%,#D8B968 100%)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexShrink: 0,
+                            boxShadow: '0 2px 8px rgba(0,0,0,.25)',
                         }}>
-                            {/* Mountain glyph */}
-                            <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true">
-                                <path d="M9 1 L15 11 H3 Z" fill="white" opacity="0.9"/>
-                                <path d="M13 4 L18 11 H8 Z" fill="white" opacity="0.6"/>
+                            <svg width="20" height="16" viewBox="0 0 22 17" fill="none" aria-hidden="true">
+                                <path d="M11 1L17.5 12.5H4.5L11 1Z" fill="white" opacity="0.95"/>
+                                <path d="M16 4.5L21.5 12.5H10.5L16 4.5Z" fill="white" opacity="0.5"/>
+                                <path d="M5.5 6.5L10 12.5H1L5.5 6.5Z" fill="white" opacity="0.35"/>
                             </svg>
                         </div>
-                        <span style={{color: 'white', fontWeight: 600, fontSize: 15, letterSpacing: '-0.01em'}}>
+                        <span style={{color: 'white', fontWeight: 700, fontSize: 15.5, letterSpacing: '-0.015em'}}>
               Altitude
             </span>
                     </Link>
@@ -64,14 +65,17 @@ export default function LandingPage() {
                             Demo
                         </Link>
                         <Link href="/dashboard" style={{
-                            color: 'white',
+                            color: 'var(--alt-navy)',
                             textDecoration: 'none',
                             fontSize: 14,
-                            fontWeight: 500,
-                            padding: '6px 16px',
-                            borderRadius: 8,
-                            background: 'var(--gold)',
-                            transition: 'opacity 0.15s',
+                            fontWeight: 700,
+                            padding: '7px 18px',
+                            borderRadius: 999,
+                            background: 'var(--alt-gold)',
+                            transition: 'background 0.15s',
+                            minHeight: 38,
+                            display: 'inline-flex',
+                            alignItems: 'center',
                         }}>
                             Open dashboard
                         </Link>
@@ -85,7 +89,7 @@ export default function LandingPage() {
                     className="alt-topo"
                     aria-labelledby="hero-heading"
                     style={{
-                        background: 'var(--sage-deep)',
+                        background: 'var(--alt-navy)',
                         color: 'white',
                         padding: 'clamp(4rem, 10vw, 8rem) clamp(1rem, 5vw, 3rem)',
                         textAlign: 'center',
@@ -127,39 +131,40 @@ export default function LandingPage() {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: 8,
-                                    padding: '13px 28px',
-                                    background: 'var(--gold)',
-                                    color: 'var(--ink)',
+                                    padding: '13px 30px',
+                                    background: 'var(--alt-gold)',
+                                    color: 'var(--alt-navy)',
                                     borderRadius: 999,
                                     textDecoration: 'none',
-                                    fontWeight: 600,
+                                    fontWeight: 700,
                                     fontSize: 15,
                                     letterSpacing: '-0.01em',
-                                    minHeight: 44,
-                                    transition: 'opacity 0.15s',
+                                    minHeight: 48,
+                                    transition: 'background 0.15s',
+                                    boxShadow: '0 4px 20px rgba(214,168,79,.35)',
                                 }}
                             >
                                 Upload a contract
                             </Link>
                             <Link
-                                href="/walkthrough"
+                                href="/dashboard"
                                 style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: 8,
                                     padding: '13px 28px',
                                     background: 'transparent',
-                                    color: 'white',
-                                    border: '1.5px solid rgba(255,255,255,0.25)',
+                                    color: 'rgba(255,255,255,0.85)',
+                                    border: '1.5px solid rgba(255,255,255,0.2)',
                                     borderRadius: 999,
                                     textDecoration: 'none',
                                     fontWeight: 500,
                                     fontSize: 15,
-                                    minHeight: 44,
-                                    transition: 'border-color 0.15s',
+                                    minHeight: 48,
+                                    transition: 'border-color 0.15s, color 0.15s',
                                 }}
                             >
-                                View demo
+                                Open dashboard
                             </Link>
                         </div>
 
@@ -178,7 +183,7 @@ export default function LandingPage() {
                 <section
                     aria-labelledby="how-heading"
                     style={{
-                        background: 'var(--paper)',
+                        background: 'var(--alt-surface)',
                         padding: 'clamp(3rem, 8vw, 6rem) clamp(1rem, 5vw, 3rem)',
                     }}
                 >
@@ -237,10 +242,11 @@ export default function LandingPage() {
                             ].map((step) => (
                                 <li
                                     key={step.n}
+                                    className="landing-step-card"
                                     style={{
-                                        background: 'var(--bone)',
-                                        border: '1px solid var(--line)',
-                                        borderRadius: 'var(--r-md)',
+                                        background: 'var(--alt-bg)',
+                                        border: '1px solid var(--alt-border)',
+                                        borderRadius: 14,
                                         padding: 'clamp(1rem, 2.5vw, 1.5rem)',
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -248,16 +254,20 @@ export default function LandingPage() {
                                     }}
                                 >
                                     <div
-                                        className="alt-mono"
                                         style={{
-                                            fontSize: 10,
-                                            fontWeight: 700,
-                                            color: 'var(--sage)',
-                                            letterSpacing: '0.12em',
-                                            textTransform: 'uppercase',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 8,
                                         }}
                                     >
-                                        Step {step.n}
+                                        <span style={{
+                                            width: 26, height: 26, borderRadius: 999,
+                                            background: 'var(--alt-navy)',
+                                            color: 'var(--alt-gold)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: 11, fontWeight: 800, fontFamily: 'var(--f-mono)',
+                                            flexShrink: 0,
+                                        }}>{step.n}</span>
                                     </div>
                                     <div style={{fontSize: 15, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.3}}>
                                         {step.title}
@@ -275,8 +285,9 @@ export default function LandingPage() {
                 <section
                     aria-labelledby="features-heading"
                     style={{
-                        background: 'var(--sage-tint)',
+                        background: 'var(--alt-bg)',
                         padding: 'clamp(3rem, 8vw, 6rem) clamp(1rem, 5vw, 3rem)',
+                        borderTop: '1px solid var(--alt-border)',
                     }}
                 >
                     <div style={{maxWidth: 1080, margin: '0 auto'}}>
@@ -309,49 +320,52 @@ export default function LandingPage() {
                                 {
                                     label: 'Deadline timeline',
                                     desc: 'Every CTME deadline extracted, dated, and tracked. Overdue items surface immediately. Today marker shows where you stand.',
-                                    accent: 'var(--clay)',
+                                    accent: 'var(--alt-warning)',
                                 },
                                 {
                                     label: 'Task checklist',
                                     desc: 'Operational tasks generated from your contract. Complete them from your phone as you move through the deal.',
-                                    accent: 'var(--sage)',
+                                    accent: 'var(--alt-navy-800)',
                                 },
                                 {
                                     label: 'Contact matrix',
                                     desc: 'Buyer, seller, lenders, title, inspectors — all parties and vendors in one tap-to-call contact screen.',
-                                    accent: 'var(--sage)',
+                                    accent: 'var(--alt-navy-800)',
                                 },
                                 {
                                     label: 'Document tracker',
                                     desc: 'Required, conditional, and missing documents tracked against the Colorado transaction checklist.',
-                                    accent: 'var(--gold)',
+                                    accent: 'var(--alt-gold)',
                                 },
                                 {
-                                    label: 'Human review layer',
-                                    desc: 'AI extraction is a starting point, not a final answer. Every field shows its source evidence for your approval.',
-                                    accent: 'var(--sage)',
+                                    label: 'Source-backed review',
+                                    desc: 'AI extraction is a starting point. Every extracted field shows its source evidence — you approve before anything becomes part of the file.',
+                                    accent: 'var(--alt-info)',
                                 },
                                 {
                                     label: 'Closeout tracking',
                                     desc: 'Post-close tasks, thank-you follow-up, review requests, and referral tracking — nothing falls through after closing.',
-                                    accent: 'var(--slate)',
+                                    accent: 'var(--alt-success)',
                                 },
                             ].map((feat) => (
                                 <li
                                     key={feat.label}
-                                    className="alt-card"
+                                    className="landing-feature-card"
                                     style={{
-                                        padding: 'clamp(1rem, 2.5vw, 1.5rem)',
+                                        background: 'var(--alt-surface)',
+                                        border: '1px solid var(--alt-border)',
                                         borderLeft: `3px solid ${feat.accent}`,
+                                        borderRadius: 14,
+                                        padding: 'clamp(1rem, 2.5vw, 1.5rem)',
                                         display: 'flex',
                                         flexDirection: 'column',
                                         gap: 8,
                                     }}
                                 >
-                                    <div style={{fontSize: 14, fontWeight: 600, color: 'var(--ink)'}}>
+                                    <div style={{fontSize: 14, fontWeight: 600, color: 'var(--alt-navy)'}}>
                                         {feat.label}
                                     </div>
-                                    <div style={{fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.65}}>
+                                    <div style={{fontSize: 13.5, color: 'var(--alt-muted)', lineHeight: 1.65}}>
                                         {feat.desc}
                                     </div>
                                 </li>
@@ -364,9 +378,9 @@ export default function LandingPage() {
                 <section
                     aria-labelledby="trust-heading"
                     style={{
-                        background: 'var(--paper)',
+                        background: 'var(--alt-surface)',
                         padding: 'clamp(3rem, 8vw, 6rem) clamp(1rem, 5vw, 3rem)',
-                        borderTop: '1px solid var(--line)',
+                        borderTop: '1px solid var(--alt-border)',
                     }}
                 >
                     <div style={{maxWidth: 680, margin: '0 auto', textAlign: 'center'}}>
@@ -399,21 +413,27 @@ export default function LandingPage() {
                                 gap: 'clamp(0.75rem, 3vw, 2rem)',
                                 justifyContent: 'center',
                                 flexWrap: 'wrap',
-                                marginTop: '1.5rem',
+                                marginTop: '2rem',
                             }}
                         >
                             {[
-                                {label: 'AI-extracted fields', sub: 'Broker-reviewed before use'},
-                                {label: 'Mobile-first', sub: 'Works where brokers work'},
-                                {label: 'Audit trail', sub: 'Every change logged'},
+                                {label: 'Source-backed extraction', sub: 'Every AI field is broker-reviewed'},
+                                {label: 'Mobile-first design', sub: 'Built for brokers in the field'},
+                                {label: 'Full audit trail', sub: 'Every action logged and timestamped'},
                             ].map((stat) => (
-                                <div key={stat.label} style={{textAlign: 'center', minWidth: 120}}>
+                                <div key={stat.label} style={{
+                                    textAlign: 'center', minWidth: 120,
+                                    padding: '1rem 1.25rem',
+                                    background: 'var(--alt-bg)',
+                                    border: '1px solid var(--alt-border)',
+                                    borderRadius: 12,
+                                }}>
                                     <div style={{
                                         fontSize: 13.5,
-                                        fontWeight: 600,
-                                        color: 'var(--ink)'
+                                        fontWeight: 700,
+                                        color: 'var(--alt-navy)'
                                     }}>{stat.label}</div>
-                                    <div style={{fontSize: 12, color: 'var(--ink-3)', marginTop: 4}}>{stat.sub}</div>
+                                    <div style={{fontSize: 12.5, color: 'var(--alt-muted)', marginTop: 5}}>{stat.sub}</div>
                                 </div>
                             ))}
                         </div>
@@ -425,7 +445,7 @@ export default function LandingPage() {
                     aria-labelledby="cta-heading"
                     className="alt-topo"
                     style={{
-                        background: 'var(--sage-deep)',
+                        background: 'var(--alt-navy)',
                         padding: 'clamp(3.5rem, 8vw, 6rem) clamp(1rem, 5vw, 3rem)',
                         textAlign: 'center',
                     }}
@@ -462,15 +482,16 @@ export default function LandingPage() {
                                 style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    padding: '14px 32px',
-                                    background: 'var(--gold)',
-                                    color: 'var(--ink)',
+                                    padding: '14px 34px',
+                                    background: 'var(--alt-gold)',
+                                    color: 'var(--alt-navy)',
                                     borderRadius: 999,
                                     textDecoration: 'none',
-                                    fontWeight: 600,
+                                    fontWeight: 700,
                                     fontSize: 15,
-                                    minHeight: 44,
+                                    minHeight: 48,
                                     letterSpacing: '-0.01em',
+                                    boxShadow: '0 4px 20px rgba(214,168,79,.3)',
                                 }}
                             >
                                 Upload a contract
@@ -488,7 +509,7 @@ export default function LandingPage() {
                                     textDecoration: 'none',
                                     fontWeight: 500,
                                     fontSize: 15,
-                                    minHeight: 44,
+                                    minHeight: 48,
                                 }}
                             >
                                 Open dashboard
@@ -501,8 +522,8 @@ export default function LandingPage() {
                 <footer
                     role="contentinfo"
                     style={{
-                        background: 'var(--sage-deep)',
-                        borderTop: '1px solid rgba(255,255,255,0.06)',
+                        background: 'var(--alt-navy)',
+                        borderTop: '1px solid rgba(255,255,255,0.07)',
                         padding: '2rem clamp(1rem, 5vw, 3rem)',
                     }}
                 >
@@ -517,19 +538,20 @@ export default function LandingPage() {
                     }}>
                         <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
                             <div style={{
-                                width: 22,
-                                height: 22,
-                                borderRadius: 5,
-                                background: 'var(--gold-metallic)',
+                                width: 26,
+                                height: 26,
+                                borderRadius: 7,
+                                background: 'linear-gradient(150deg,#E7CB7E 0%,#C9A14A 45%,#9C7726 78%,#D8B968 100%)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                             }}>
-                                <svg width="12" height="9" viewBox="0 0 12 9" fill="none" aria-hidden="true">
-                                    <path d="M6 0.5 L10 7.5 H2 Z" fill="white" opacity="0.9"/>
+                                <svg width="15" height="11" viewBox="0 0 18 13" fill="none" aria-hidden="true">
+                                    <path d="M9 1L14 10H4L9 1Z" fill="white" opacity="0.95"/>
+                                    <path d="M13.5 4L17.5 10H9.5L13.5 4Z" fill="white" opacity="0.5"/>
                                 </svg>
                             </div>
-                            <span style={{color: 'rgba(255,255,255,0.5)', fontSize: 13}}>
+                            <span style={{color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: 500}}>
                 Altitude Transactions
               </span>
                         </div>
