@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getStoredUser } from '@/lib/api-client';
 
 /* ── Inline SVG icons (1.75px stroke, Lucide-style) ── */
 function IcDashboard() {
@@ -63,16 +64,21 @@ function IcUpload() {
 
 
 const navItems = [
-  { href: '/dashboard',           label: 'Today',        Icon: IcDashboard, cnt: null },
-  { href: '/transactions',        label: 'Deals',        Icon: IcFolderOpen, cnt: '12' },
-  { href: '/deadlines',           label: 'Deadlines',    Icon: IcCalendar,  cnt: '3' },
-  { href: '/contacts',            label: 'Contacts',     Icon: IcUsers,     cnt: null },
-  { href: '/documents',           label: 'Documents',    Icon: IcFolder,    cnt: null },
-  { href: '/audit',               label: 'Audit log',    Icon: IcShield,    cnt: null },
+  { href: '/dashboard',    label: 'Today',     Icon: IcDashboard  },
+  { href: '/transactions', label: 'Deals',     Icon: IcFolderOpen },
+  { href: '/deadlines',    label: 'Deadlines', Icon: IcCalendar   },
+  { href: '/contacts',     label: 'Contacts',  Icon: IcUsers      },
+  { href: '/documents',    label: 'Documents', Icon: IcFolder     },
+  { href: '/audit',        label: 'Audit log', Icon: IcShield     },
 ];
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const user = getStoredUser();
+  const displayName = user?.name ?? 'Broker';
+  const initials = displayName
+    .split(' ').filter(Boolean).map((n) => n[0].toUpperCase()).slice(0, 2).join('');
+  const brokerage = user?.brokerage ?? 'Colorado Real Estate';
 
   const isActive = (href: string) =>
     pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'));
@@ -93,7 +99,7 @@ export function SidebarNav() {
       <div className="dk-railsec">Workspace</div>
 
       <nav className="dk-nav">
-        {navItems.map(({ href, label, Icon, cnt }) => {
+        {navItems.map(({ href, label, Icon }) => {
           const active = isActive(href);
           return (
             <Link
@@ -105,7 +111,6 @@ export function SidebarNav() {
                 <Icon />
               </span>
               {label}
-              {cnt && <span className="cnt">{cnt}</span>}
             </Link>
           );
         })}
@@ -120,10 +125,10 @@ export function SidebarNav() {
       </Link>
 
       <div className="dk-railfoot">
-        <div className="dk-avatar">SC</div>
+        <div className="dk-avatar">{initials}</div>
         <div>
-          <div className="nm">Sarah Chen</div>
-          <div className="rl">Managing Broker</div>
+          <div className="nm">{displayName}</div>
+          <div className="rl">{brokerage}</div>
         </div>
       </div>
     </aside>

@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     # Directory where uploaded document bytes are stored.
     upload_dir: str = str(BACKEND_ROOT / "uploads")
 
+    # Seeded broker account — override via environment for each deployment.
+    seed_broker_name: str = "Broker"
+    seed_broker_email: str = "broker@altitude.app"
+    seed_broker_brokerage: str = ""
+    seed_broker_license: str = ""
+
     model_config = SettingsConfigDict(
         env_file=str(BACKEND_ROOT / ".env"),
         env_file_encoding="utf-8",

@@ -86,7 +86,7 @@ export function ScreenLogin({ go, user = FIXTURE_USER, onContinue }: ScreenLogin
         fontSize: 11, color: 'var(--ink-3)', textAlign: 'center',
         fontFamily: 'var(--f-mono)', letterSpacing: '0.08em',
       }}>
-        v0.4 · sits beside CTME · does not replace it
+        Sits beside CTME · does not replace it
       </div>
     </div>
   );

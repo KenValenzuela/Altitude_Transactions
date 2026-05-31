@@ -3,8 +3,10 @@ def test_auth_session(client):
     assert resp.status_code == 200
     body = resp.json()
     assert body["token"]
-    assert body["user"]["name"] == "Brett Predmore"
-    assert body["user"]["brokerage"] == "RE/MAX Real Estate Group"
+    user = body["user"]
+    assert user["id"]
+    assert user["name"]
+    assert user["email"]
 
 
 def test_transactions_non_empty_after_seed(client):

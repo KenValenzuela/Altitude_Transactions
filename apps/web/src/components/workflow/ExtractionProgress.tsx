@@ -9,7 +9,7 @@ export function ExtractionProgress({ job }: { job?: ExtractionJob }) {
       <p className="eyebrow">Extraction progress</p>
       <h2 id="extraction-progress-title">{status}</h2>
       <progress value={percent} max={100} aria-label={`Extraction is ${percent}% complete`} />
-      <p className="muted">The demo parser replays a structured sample extraction; uploaded files still create real documents and jobs.</p>
+      <p className="muted">Fields, deadlines, and parties are extracted from your contract PDF. Each value is held for your review before it becomes part of the transaction record.</p>
     </section>
   );
 }

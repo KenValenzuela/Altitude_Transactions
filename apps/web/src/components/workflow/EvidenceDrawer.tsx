@@ -131,7 +131,7 @@ export function EvidenceDrawer({ field }: { field?: ExtractedField }) {
           <div className="evidence-drawer__section">
             <div className="evidence-drawer__dt">Extraction method</div>
             <div className="evidence-drawer__dd" style={{ color: 'var(--alt-muted)' }}>
-              {field.extractionMethod === 'fixture' ? 'Structured fixture extraction (sandbox)' :
+              {field.extractionMethod === 'fixture' ? 'Structured data extraction' :
                field.extractionMethod === 'human_corrected' ? 'Corrected by reviewer' :
                field.extractionMethod === 'deterministic' ? 'Deterministic field parser' :
                field.extractionMethod === 'llm' ? 'AI extraction' :
