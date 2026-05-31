@@ -15,13 +15,13 @@
 | Backend API      | FastAPI + SQLModel, Python 3.11+, SQLite                      | Active and working           |
 | Styling          | CSS custom properties (no Tailwind), Instrument Serif + Geist | Well-structured token system |
 | Mobile           | None                                                          | Not yet started              |
-| Monorepo tooling | None (independent frontend/ and backend/ folders)             | Not yet wired                |
+| Monorepo tooling | None (independent apps/web/ and backend/ folders)             | Not yet wired                |
 
 ### Repo structure summary
 
 ```
 Altitude_Transactions_PT/
-├── frontend/       ← Next.js 15 web app (active source of truth)
+├── apps/web/       ← Next.js 15 web app (active source of truth)
 ├── backend/        ← FastAPI API (active source of truth)
 ├── project/        ← Original HTML prototype + brand assets
 ├── docs/           ← Architecture, API, UX, and strategy documentation
@@ -193,7 +193,7 @@ tables, bulk operations, audit history) and the marketing/demo surface. They sha
 Altitude_Transactions_PT/
 ├── apps/
 │   ├── mobile/     ← NEW: Expo / React Native broker app
-│   ├── web/        ← MOVE from frontend/: Next.js web portal
+│   ├── web/        ← MOVE from apps/web/: Next.js web portal
 │   └── api/        ← MOVE from backend/: FastAPI backend
 ├── packages/
 │   └── shared/     ← NEW: shared TypeScript types, theme, utils
@@ -202,9 +202,9 @@ Altitude_Transactions_PT/
 
 ### Migration safety rules
 
-1. Do not rename or move `frontend/` or `backend/` until the current app is fully stable and tested
+1. Do not rename or move `apps/web/` or `backend/` until the current app is fully stable and tested
 2. Create `packages/shared` first — pure TypeScript, no framework imports
-3. Create `apps/mobile` as an additive new folder — never by moving `frontend/`
+3. Create `apps/mobile` as an additive new folder — never by moving `apps/web/`
 4. Port mobile screens one at a time; do not build all 14 before testing the first 5 end-to-end
 5. Only sunset web screens after mobile equivalents are proven stable in production
 
@@ -256,7 +256,7 @@ Altitude_Transactions_PT/
 
 ### Response shape principles (already established)
 
-- camelCase JSON for all frontend/mobile responses
+- camelCase JSON for all apps/web/mobile responses
 - Status enums, not free-form strings
 - Source/evidence references on extracted field values
 - PATCH routes return the updated object so clients can update local state without a full reload
@@ -286,7 +286,7 @@ Altitude_Transactions_PT/
 
 | Risk                                         | Likelihood      | Mitigation                                                                         |
 |----------------------------------------------|-----------------|------------------------------------------------------------------------------------|
-| Monorepo wiring breaks current app           | Medium          | Keep `frontend/` and `backend/` as-is until wiring is verified                     |
+| Monorepo wiring breaks current app           | Medium          | Keep `apps/web/` and `backend/` as-is until wiring is verified                     |
 | React Native style system diverges from web  | High (expected) | `packages/shared/theme.ts` as single source; platforms implement independently     |
 | Push notification credentials (Apple/Google) | High complexity | Use Expo's managed push service; do not hard-code tokens                           |
 | Large PDF uploads on mobile (slow network)   | High            | Add file size validation and chunked upload or server-side URL ingestion           |
@@ -301,7 +301,7 @@ Altitude_Transactions_PT/
 
 The following steps are in progress or immediately next:
 
-1. **Phase 2** — Create `docs/ALTITUDE_DESIGN_SYSTEM.md` and verify token alignment in `frontend/src/app/globals.css`
+1. **Phase 2** — Create `docs/ALTITUDE_DESIGN_SYSTEM.md` and verify token alignment in `apps/web/src/app/globals.css`
 2. **Phase 3** — Build the `/` public landing page so the web app communicates the product story
 3. **Phase 4** — Create `packages/shared/` with pure TypeScript types and theme constants
 4. **Phase 5** — Create `docs/EXPO_IMPLEMENTATION_CHECKLIST.md` as the approved mobile build roadmap

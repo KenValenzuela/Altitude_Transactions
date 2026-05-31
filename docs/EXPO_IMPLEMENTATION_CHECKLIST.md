@@ -42,7 +42,7 @@ codebase.
 Altitude_Transactions_PT/
 ├── apps/
 │   ├── mobile/          ← Expo React Native broker + client app  [NOT YET CREATED]
-│   ├── web/             ← Next.js web portal (currently frontend/)
+│   ├── web/             ← Next.js web portal (apps/web/)
 │   └── api/             ← FastAPI backend (currently backend/)
 ├── packages/
 │   └── shared/          ← Shared types, theme, constants  [CREATED]
@@ -62,7 +62,7 @@ Altitude_Transactions_PT/
 
 ### Gate 0 — Current state (complete)
 
-- [x] Next.js web app working at `frontend/`
+- [x] Next.js web app working at `apps/web/`
 - [x] FastAPI backend working at `backend/`
 - [x] `packages/shared/` types and theme created
 - [x] Landing page at `/` tells the product story
@@ -72,7 +72,7 @@ Altitude_Transactions_PT/
 
 - [ ] Decide: pnpm workspaces or Turborepo
 - [ ] Create root `package.json` with workspaces config
-- [ ] Verify `frontend/` still builds as `apps/web`
+- [x] `apps/web/` is now the canonical web app location
 - [ ] Verify `backend/` still runs as `apps/api`
 - [ ] Wire `packages/shared` so both apps can import it
 - **Do not proceed to Gate 2 until Gate 1 builds are verified**

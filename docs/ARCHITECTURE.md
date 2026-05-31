@@ -2,7 +2,7 @@
 
 ## Frontend route structure
 
-The active app is TypeScript-first under `frontend/src/app` using the Next.js App Router:
+The active app is TypeScript-first under `apps/web/src/app` using the Next.js App Router:
 
 - `/dashboard` for Brett's navy/gold operations cockpit.
 - `/upload` for CTME PDF upload.
@@ -11,7 +11,8 @@ The active app is TypeScript-first under `frontend/src/app` using the Next.js Ap
 - `/transactions/[id]` for the overview workspace.
 - `/transactions/[id]/review`, `/deadlines`, `/tasks`, `/contacts`, `/documents`, and `/audit` for focused operational views.
 
-Old `/checklist`, `/parties`, `/summary`, and `/postclose` routes redirect into the operations model. Legacy JSX prototypes are archived in `project/archive/legacy-jsx-prototypes/`; `frontend/src` is the source of truth.
+Old `/checklist`, `/parties`, `/summary`, and `/postclose` routes redirect into the operations model. Legacy JSX
+prototypes are archived in `project/archive/legacy-jsx-prototypes/`; `apps/web/src` is the source of truth.
 
 ## Backend module structure
 
@@ -42,4 +43,6 @@ Audit events are required for document uploads, extraction, field approval/editi
 
 ## Tailwind
 
-Tailwind was deferred. The existing app already used a CSS-variable system and custom components; adding Tailwind would have added configuration churn without materially improving the demo. The refactor centralizes responsive cockpit styles in `frontend/src/app/globals.css` using CSS Grid, Flexbox, rem spacing, accessible focus states, and design tokens.
+Tailwind was deferred. The existing app already used a CSS-variable system and custom components; adding Tailwind would
+have added configuration churn without materially improving the demo. The refactor centralizes responsive cockpit styles
+in `apps/web/src/app/globals.css` using CSS Grid, Flexbox, rem spacing, accessible focus states, and design tokens.

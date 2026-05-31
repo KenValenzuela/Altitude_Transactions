@@ -13,9 +13,14 @@ earlier single-page design prototype. (The original prototype is preserved — s
 
 ```
 altitude/
-├── frontend/          Next.js 15 App Router · React · TypeScript (mobile-first)
+├── apps/
+│   ├── web/           Next.js 15 App Router · React · TypeScript (mobile-first)
+│   └── mobile/        Expo React Native · TypeScript
 ├── backend/           FastAPI · SQLModel · SQLite (Postgres-compatible)
-├── project/           Original design prototype + the real sample contract data
+├── packages/
+│   └── shared/        Shared types · theme · domain constants
+├── docs/              Architecture, API contracts, design system docs
+├── project/           Original design prototype + real sample contract data
 └── chats/             Original design conversation transcripts (reference)
 ```
 
@@ -57,25 +62,37 @@ uvicorn app.main:app --reload --port 8000
 - On first start the DB is seeded with a demo broker and one fully-built demo
   transaction (the Cherry Springs contract), so the dashboard is non-empty.
 
-### Frontend — Next.js (port 3000)
+### Web — Next.js (port 3000)
 
 ```bash
-cd frontend
+cd apps/web
 npm install
 cp .env.example .env.local   # optional; defaults already point at :8000
 npm run dev
 ```
 
+Or from the root: `npm run dev:web`
+
+### Mobile — Expo React Native
+
+```bash
+cd apps/mobile
+npm install
+npm run start
+```
+
+Or from the root: `npm run mobile`
+
 Open `http://localhost:3000` → you land on `/dashboard`. If you use `/login`, click **Continue** to establish a stubbed session and reach the dashboard.
 
 ## Environment variables
 
-| Where | Variable | Default | Purpose |
-|-------|----------|---------|---------|
-| frontend | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000/api` | Backend base URL |
-| backend | `DATABASE_URL` | `sqlite:///./altitude.db` | DB connection (swap for Postgres) |
-| backend | `FRONTEND_ORIGIN` | `http://localhost:3000` | CORS allow-origin |
-| backend | `APP_VERSION` | `0.1.0` | Reported by `/api/health` |
+| Where    | Variable                   | Default                     | Purpose                           |
+|----------|----------------------------|-----------------------------|-----------------------------------|
+| apps/web | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000/api` | Backend base URL                  |
+| backend  | `DATABASE_URL`             | `sqlite:///./altitude.db`   | DB connection (swap for Postgres) |
+| backend  | `FRONTEND_ORIGIN`          | `http://localhost:3000`     | CORS allow-origin                 |
+| backend  | `APP_VERSION`              | `0.1.0`                     | Reported by `/api/health`         |
 
 ## What is real vs. mocked
 
@@ -97,7 +114,7 @@ Open `http://localhost:3000` → you land on `/dashboard`. If you use `/login`, 
 - **Auth.** `get_current_user` returns the seeded broker and
   `POST /api/auth/session` returns a fixed token. The dependency is real-shaped
   so it can be replaced with real auth without touching call sites.
-- **Frontend fixtures.** `frontend/src/lib/fixtures.ts` holds typed demo data
+- **Frontend fixtures.** `apps/web/src/lib/fixtures.ts` holds typed demo data
   (in the exact API shape) used **only** by the `/walkthrough` route and as
   offline fallbacks. It is never sent anywhere and is separate from the API client.
 
@@ -118,7 +135,7 @@ Design-system rules now follow these practical tokens and patterns:
 
 ## Architecture notes
 
-**Frontend** (`frontend/src/`)
+**Web app** (`apps/web/src/`)
 - `app/` — App Router routes (one per workflow step).
 - `components/workflow/` — production workflow primitives and feature components (`AppShell`, page/section headers, cards, buttons, states, review table, upload, task/deadline/document/activity components).
 - `components/ui/` and `components/screens/` — preserved prototype-era components used by legacy/demo routes.
@@ -126,6 +143,11 @@ Design-system rules now follow these practical tokens and patterns:
 - `lib/api-client.ts` — the only production workflow layer that calls `fetch`.
 - `hooks/useApi.ts` — generic data-fetching with loading/error/refresh.
 - `lib/navigation.ts` — maps screen ids → real routes.
+
+**Mobile app** (`apps/mobile/`)
+
+- Expo React Native with file-based routing (`app/` directory).
+- Shares theme tokens and domain types from `packages/shared`.
 
 **Backend** (`backend/app/`)
 - `api/routes/` — modular routers (auth, transactions, documents, extractions, tasks).
@@ -135,7 +157,7 @@ Design-system rules now follow these practical tokens and patterns:
   `deadline_service`, `task_service` (real service boundaries).
 - `db/seed.py` — idempotent demo seed.
 
-The design tokens (`frontend/src/app/globals.css`) — color/typography/spacing
+The design tokens (`apps/web/src/app/globals.css`) — color/typography/spacing
 scales, dark theme, accent theming, status colors, urgency indicators — are
 preserved from the prototype and remain the design system.
 
@@ -143,7 +165,7 @@ preserved from the prototype and remain the design system.
 
 ```bash
 cd backend && pytest          # 11 tests: health, seed, full upload→extract→confirm, error paths
-cd frontend && npm run build  # typecheck + production build
+cd apps/web && npm run build  # typecheck + production build
 ```
 
 ## Remaining technical debt & known limitations

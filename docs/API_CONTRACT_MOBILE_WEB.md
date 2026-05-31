@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-29
 **Backend:** FastAPI + SQLModel (`backend/app/api/routes/`)
-**Clients:** Next.js web app (`frontend/`) and planned Expo mobile app (`apps/mobile/`)
+**Clients:** Next.js web app (`apps/web/`) and planned Expo mobile app (`apps/mobile/`)
 
 ---
 

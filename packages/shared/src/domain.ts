@@ -5,7 +5,7 @@
  * Used by web (Next.js), mobile (Expo), and future integrations.
  *
  * These types mirror the FastAPI response shapes from backend/app/models/
- * and the frontend/src/types/domain.ts active implementation.
+ * and the apps/web/src/types/domain.ts active implementation.
  */
 
 // ── Enums ────────────────────────────────────────────────────────────────────
