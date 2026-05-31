@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 
 from app.models import Contact, Deadline, DocumentRequirement, ExtractionRun, ExtractedField, PostCloseTask, SourceDocument, Task, TaskStatus, Transaction, AuditEvent
 from app.schemas import *  # noqa: F403
-from app.services.demo_workflow import materialize_extraction
+from app.services.fixture_provider import materialize_extraction
 
 
 def _days(close: date | None) -> int:

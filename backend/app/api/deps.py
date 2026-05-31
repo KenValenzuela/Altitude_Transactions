@@ -7,13 +7,13 @@ from sqlmodel import Session, select
 from app.db.session import get_session
 from app.models import User
 
-DEMO_TOKEN = "demo-token-altitude"  # noqa: S105 - fake token for stubbed auth
+DEV_TOKEN = "dev-token-altitude"  # noqa: S105 - placeholder token for stubbed auth
 
 
 def get_current_user(session: Session = Depends(get_session)) -> User:
-    """Stubbed auth: returns the seeded demo broker.
+    """Stubbed auth dependency. Returns the seeded broker user.
 
-    Real-shaped dependency so it is trivially swappable for OAuth/JWT later.
+    Real-shaped so it is trivially swappable for OAuth/JWT in Phase 2.
     No passwords are checked.
     """
     user = session.exec(select(User)).first()
@@ -25,4 +25,4 @@ def get_current_user(session: Session = Depends(get_session)) -> User:
     return user
 
 
-__all__ = ["get_current_user", "get_session", "DEMO_TOKEN"]
+__all__ = ["get_current_user", "get_session", "DEV_TOKEN"]

@@ -11,14 +11,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import auth, contacts, documents, extractions, fields, health, tasks, transactions
 from app.core.config import settings
-from app.db.seed import seed_demo_data
+from app.db.seed import seed_initial_data
 from app.db.session import init_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    seed_demo_data()
+    seed_initial_data()
     yield
 
 

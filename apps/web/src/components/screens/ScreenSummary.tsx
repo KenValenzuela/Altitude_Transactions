@@ -1,7 +1,7 @@
 'use client';
 import type { GoFn } from '@/types';
 import type { TransactionDetail } from '@/types/api';
-import { DEMO_DETAIL } from '@/lib/fixtures';
+import { FIXTURE_DETAIL } from '@/lib/fixtures';
 import { formatDateShort, daysUntil } from '@/lib/format';
 import { AIBadge } from '@/components/ui/AIBadge';
 import { Button } from '@/components/ui/Button';
@@ -14,7 +14,7 @@ import { TopBar } from '@/components/ui/TopBar';
  * tasks, the next upcoming deadlines, and urgent items as the watch list. This
  * is the honest MVP — a real product would let the broker edit the AI draft.
  */
-export function ScreenSummary({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?: TransactionDetail }) {
+export function ScreenSummary({ go, detail = FIXTURE_DETAIL }: { go: GoFn; detail?: TransactionDetail }) {
   const allTasks = detail.tasks.flatMap((g) => g.items).filter((t) => !t.isPostClose);
   const completed = allTasks.filter((t) => t.state === 'done').map((t) => t.title);
   const upcoming = detail.deadlines

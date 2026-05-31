@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api } from '@/lib/api-client';
+import { api, getStoredUser } from '@/lib/api-client';
 import type { TransactionCard as TxnType } from '@/types/domain';
 import { AppShell } from '@/components/workflow/AppShell';
 import { EmptyState } from '@/components/workflow/EmptyState';
@@ -95,40 +95,18 @@ function getDayLabel(): string {
   return `${weekday} · ${rest}`;
 }
 
-/* ── Mock static data for deadline + activity sidebar ──────────── */
-const MOCK_DEADLINES = [
-  { day: '02', mon: 'Jun', title: 'Inspection objection deadline', sub: '412 Aspen Ridge Rd · buyer must respond', tone: 'risk', right: '2 days' },
-  { day: '04', mon: 'Jun', title: 'Final walkthrough', sub: '27 Pinecrest Ct · schedule with client', tone: 'ok', right: '4 days' },
-  { day: '09', mon: 'Jun', title: 'Appraisal deadline', sub: '88 Lakeview Dr · awaiting lender', tone: 'warn', right: '9 days' },
-  { day: '18', mon: 'Jun', title: 'Loan objection deadline', sub: '88 Lakeview Dr · financing contingency', tone: 'warn', right: '18 days' },
-  { day: '30', mon: 'Jun', title: 'Closing — 412 Aspen Ridge', sub: 'Time is of the essence', tone: 'neutral', right: '30 days' },
-];
-
-const MOCK_ACTIVITY = [
-  { t: '2026-05-30 09:14', actor: 'Sarah Chen', action: 'VERIFY', target: 'closing_date → Jun 30, 2026', tone: 'ok' },
-  { t: '2026-05-30 09:12', actor: 'Sarah Chen', action: 'APPROVE', target: 'purchase_price → $612,000', tone: 'ok' },
-  { t: '2026-05-30 08:55', actor: 'System', action: 'EXTRACT', target: '12 fields from Purchase Contract.pdf', tone: 'info' },
-  { t: '2026-05-29 16:40', actor: 'System', action: 'UPLOAD', target: 'Purchase Contract.pdf · 14 pages', tone: 'info' },
-  { t: '2026-05-29 16:38', actor: 'Sarah Chen', action: 'CREATE', target: 'transaction ALT-2026-0417', tone: 'neutral' },
-];
-
 function dlToneColor(tone: string) {
   return { risk: 'var(--risk)', ok: 'var(--ok)', warn: 'var(--warn)', neutral: 'var(--fg3)' }[tone] ?? 'var(--fg3)';
 }
 function dlToneFg(tone: string) {
   return { risk: 'var(--risk-text)', ok: 'var(--ok-text)', warn: 'var(--warn-text)', neutral: 'var(--fg3)' }[tone] ?? 'var(--fg3)';
 }
-function actToneColor(tone: string) {
-  return { ok: 'var(--ok)', info: 'var(--info)', warn: 'var(--warn)', neutral: 'var(--fg3)' }[tone] ?? 'var(--fg3)';
-}
-function actToneFg(tone: string) {
-  return { ok: 'var(--ok-text)', info: 'var(--info-text)', warn: 'var(--warn-text)', neutral: 'var(--fg3)' }[tone] ?? 'var(--fg3)';
-}
 
 export default function DashboardPage() {
   const [cards, setCards] = useState<TxnType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const brokerName = getStoredUser()?.name?.split(' ')[0] ?? 'there';
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -151,14 +129,29 @@ export default function DashboardPage() {
     averagePct:   cards.length ? Math.round(cards.reduce((s, c) => s + c.progress, 0) / cards.length * 100) : 0,
   }), [cards]);
 
-  const urgent = cards.filter(c => c.urgent);
+  const urgentCards = cards.filter(c => c.urgent);
   const active = cards.filter(c => c.active || c.stage !== 'Closed');
 
+  /* Derive upcoming deadlines from transaction cards — sorted by days to close */
+  const upcomingDeadlines = useMemo(() =>
+    [...cards]
+      .filter(c => c.daysToClose >= 0 && c.next)
+      .sort((a, b) => a.daysToClose - b.daysToClose)
+      .slice(0, 5)
+      .map(c => ({
+        id: c.id,
+        address: c.address,
+        next: c.next,
+        daysToClose: c.daysToClose,
+        tone: c.urgent ? 'risk' : c.daysToClose <= 7 ? 'warn' : 'neutral',
+      })),
+  [cards]);
+
   const stats = [
-    { n: summary.atRisk || 3,       l: 'Deadlines this week', k: summary.atRisk > 0 ? `${summary.atRisk} at risk` : '1 at risk',      tone: 'risk', edge: 'var(--risk)' },
-    { n: summary.needsReview || 5,  l: 'Fields need review',  k: 'Human review required',  tone: 'warn', edge: 'var(--warn)' },
-    { n: 2,                          l: 'Tasks blocked',        k: 'Awaiting third parties', tone: 'warn', edge: 'var(--warn)' },
-    { n: summary.activeFiles || 12, l: 'Active files',         k: 'On track',               tone: 'ok',   edge: 'var(--brass-500)' },
+    { n: summary.atRisk,      l: 'At-risk deadlines', k: summary.atRisk > 0 ? `${summary.atRisk} need attention` : 'None flagged',    tone: summary.atRisk > 0 ? 'risk' : 'ok', edge: summary.atRisk > 0 ? 'var(--risk)' : 'var(--ok)' },
+    { n: summary.needsReview, l: 'In review',          k: 'Human review required', tone: summary.needsReview > 0 ? 'warn' : 'ok', edge: summary.needsReview > 0 ? 'var(--warn)' : 'var(--ok)' },
+    { n: summary.activeFiles, l: 'Active files',       k: 'Under contract',        tone: 'ok',   edge: 'var(--brass-500)' },
+    { n: summary.averagePct,  l: 'Avg. completion',    k: 'Across active files',   tone: 'neutral', edge: 'var(--paper-300)' },
   ] as const;
 
   const nValueColor = { risk: 'var(--risk-text)', warn: 'var(--warn-text)', ok: 'var(--fg1)', neutral: 'var(--fg1)' } as const;
@@ -169,9 +162,13 @@ export default function DashboardPage() {
       <div className="dk-pagehead">
         <div>
           <div className="dk-eyebrow">{getDayLabel()}</div>
-          <h1 className="dk-h1">{getGreeting()}, Sarah</h1>
+          <h1 className="dk-h1">{getGreeting()}, {brokerName}</h1>
           <p className="dk-sub">
-            You have {summary.atRisk || 3} deadlines this week and {summary.needsReview || 5} fields waiting on your review.
+            {summary.atRisk > 0
+              ? `${summary.atRisk} file${summary.atRisk !== 1 ? 's' : ''} have deadline risk. Review before they become critical.`
+              : summary.activeFiles > 0
+              ? `${summary.activeFiles} active file${summary.activeFiles !== 1 ? 's' : ''}. All deadlines on track.`
+              : 'No active transactions. Upload a contract to get started.'}
           </p>
         </div>
         <Link href="/upload" className="dk-btn dk-primary">
@@ -192,14 +189,16 @@ export default function DashboardPage() {
         />
       )}
 
-      {!loading && !error && (
+      {!loading && !error && cards.length > 0 && (
         <>
           {/* ── Stat row ── */}
           <div className="dk-statrow">
             {stats.map((s, i) => (
               <div className="dk-statcard" key={i}>
                 <div className="edge" style={{ background: s.edge }} />
-                <div className="n" style={{ color: nValueColor[s.tone] }}>{s.n}</div>
+                <div className="n" style={{ color: nValueColor[s.tone] }}>
+                  {s.l === 'Avg. completion' ? `${s.n}%` : s.n}
+                </div>
                 <div className="l">{s.l}</div>
                 <div className="k" style={{ color: dlToneFg(s.tone) }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.edge, display: 'inline-block', flexShrink: 0 }} />
@@ -221,42 +220,44 @@ export default function DashboardPage() {
                   <Link href="/transactions" className="dk-card-head a" style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 12.5, color: 'var(--fg-brass)', cursor: 'pointer' }}>All deals</Link>
                 </div>
 
-                {/* Human review attention item */}
-                <Link href="/transactions/demo/review" style={{ textDecoration: 'none', display: 'block' }}>
-                  <div className="dk-attn">
-                    <div className="dk-attn-edge" style={{ background: 'var(--warn)' }} />
-                    <div style={{ flex: 1 }}>
-                      <Chip label="Human Review Required" tone="warn" />
-                      <div className="dk-attn-title">5 extracted fields need review</div>
-                      <div className="dk-attn-sub">1530 Belford Ave · contract just processed. Verify the AI&apos;s findings before approving.</div>
-                      <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                        <span className="dk-btn sm dk-primary" style={{ cursor: 'pointer' }}>
-                          <IcListChecks /> Review fields
-                        </span>
-                        <span className="dk-btn sm dk-secondary" style={{ cursor: 'pointer' }}>
-                          Open file
-                        </span>
+                {urgentCards.length > 0 ? urgentCards.slice(0, 2).map((t) => (
+                  <Link key={t.id} href={`/transactions/${t.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                    <div className="dk-attn">
+                      <div className="dk-attn-edge" style={{ background: 'var(--risk)' }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Chip label="Deadline Risk" tone="risk" />
+                          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 12.5, color: 'var(--risk-text)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <IcClock color="var(--risk)" /> {t.daysToClose}d
+                          </span>
+                        </div>
+                        <div className="dk-attn-title">{t.next}</div>
+                        <div className="dk-attn-sub">{t.address} · {t.city}</div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-
-                {/* Deadline risk attention item */}
-                <Link href="/transactions/demo/deadlines" style={{ textDecoration: 'none', display: 'block' }}>
-                  <div className="dk-attn">
-                    <div className="dk-attn-edge" style={{ background: 'var(--risk)' }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Chip label="Deadline Risk" tone="risk" />
-                        <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 12.5, color: 'var(--risk-text)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                          <IcClock color="var(--risk)" /> 2 days
-                        </span>
+                  </Link>
+                )) : summary.needsReview > 0 ? (
+                  <Link href="/transactions" style={{ textDecoration: 'none', display: 'block' }}>
+                    <div className="dk-attn">
+                      <div className="dk-attn-edge" style={{ background: 'var(--warn)' }} />
+                      <div style={{ flex: 1 }}>
+                        <Chip label="Human Review Required" tone="warn" />
+                        <div className="dk-attn-title">{summary.needsReview} file{summary.needsReview !== 1 ? 's' : ''} awaiting review</div>
+                        <div className="dk-attn-sub">Open a transaction and verify extracted fields before approving.</div>
+                        <div style={{ marginTop: 12 }}>
+                          <span className="dk-btn sm dk-primary" style={{ cursor: 'pointer' }}>
+                            <IcListChecks /> View transactions
+                          </span>
+                        </div>
                       </div>
-                      <div className="dk-attn-title">Inspection objection deadline</div>
-                      <div className="dk-attn-sub">412 Aspen Ridge Rd · 1 task still open. The buyer must respond by Jun 2.</div>
                     </div>
+                  </Link>
+                ) : (
+                  <div style={{ padding: '16px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <IcShield />
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13.5, color: 'var(--fg2)' }}>All files on track — no urgent items.</span>
                   </div>
-                </Link>
+                )}
               </div>
 
               {/* Active files card */}
@@ -264,66 +265,66 @@ export default function DashboardPage() {
                 <div className="dk-card-head">
                   <h3>Active files</h3>
                   <Link href="/transactions" style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 12.5, color: 'var(--fg-brass)' }}>
-                    View all {summary.activeFiles || 12}
+                    View all {summary.activeFiles}
                   </Link>
                 </div>
                 {(active.length > 0 ? active : cards).slice(0, 5).map((t, i) => (
                   <DealRow key={t.id} t={t} border={i > 0} />
                 ))}
-                {cards.length === 0 && (
-                  /* Fallback demo rows when API is empty */
-                  [
-                    { id: 'ALT-2026-0417', address: '412 Aspen Ridge Rd', city: 'Boulder, CO', stage: 'Under Contract', price: 612000, progress: 0.62, urgent: true, active: true, next: 'Inspection objection · 2d', parties: 'Marcus & Lena Whitford', status: 'active' as const, daysToClose: 30 },
-                    { id: 'ALT-2026-0392', address: '88 Lakeview Dr', city: 'Fort Collins, CO', stage: 'Under Contract', price: 489000, progress: 0.80, urgent: false, active: true, next: 'Appraisal due · 9d', parties: 'Diane Okafor', status: 'active' as const, daysToClose: 18 },
-                    { id: 'ALT-2026-0405', address: '27 Pinecrest Ct', city: 'Denver, CO', stage: 'Clear to Close', price: 755000, progress: 0.94, urgent: false, active: true, next: 'Final walkthrough · 4d', parties: 'The Halvorsen Trust', status: 'closing' as const, daysToClose: 4 },
-                  ].map((t, i) => <DealRow key={t.id} t={t} border={i > 0} />)
-                )}
               </div>
             </div>
 
             {/* Right column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-              {/* Upcoming deadlines */}
+              {/* Upcoming deadlines — derived from transaction cards */}
               <div className="dk-card">
                 <div className="dk-card-head">
                   <h3>Upcoming deadlines</h3>
-                  <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 12.5, color: 'var(--fg-brass)', cursor: 'pointer' }}>Timeline</span>
                 </div>
-                {MOCK_DEADLINES.map((d, i) => (
-                  <div className="dk-dl" key={i}>
-                    <div className="dk-dl-date"><b>{d.day}</b>{d.mon}</div>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: dlToneColor(d.tone), flexShrink: 0 }} />
-                    <div className="dk-dl-body">
-                      <div className="dk-dl-title">{d.title}</div>
-                      <div className="dk-dl-sub">{d.sub}</div>
+                {upcomingDeadlines.length > 0 ? upcomingDeadlines.map((d, i) => (
+                  <Link key={d.id} href={`/transactions/${d.id}/deadlines`} style={{ textDecoration: 'none', display: 'block' }}>
+                    <div className="dk-dl" style={i > 0 ? { borderTop: '1px solid var(--line)' } : {}}>
+                      <div className="dk-dl-date">
+                        <b>{d.daysToClose}</b>
+                        <span style={{ fontSize: 10 }}>days</span>
+                      </div>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: dlToneColor(d.tone), flexShrink: 0 }} />
+                      <div className="dk-dl-body">
+                        <div className="dk-dl-title">{d.next}</div>
+                        <div className="dk-dl-sub">{d.address}</div>
+                      </div>
+                      <span className="dk-dl-right" style={{ color: dlToneFg(d.tone) }}>
+                        {d.tone === 'risk' ? <IcAlert color={dlToneColor(d.tone)} /> : d.tone === 'ok' ? <IcCheck color={dlToneColor(d.tone)} /> : <IcClock color={dlToneColor(d.tone)} />}
+                        {d.daysToClose}d
+                      </span>
                     </div>
-                    <span className="dk-dl-right" style={{ color: dlToneFg(d.tone) }}>
-                      {d.tone === 'risk' ? <IcAlert color={dlToneColor(d.tone)} /> : d.tone === 'ok' ? <IcCheck color={dlToneColor(d.tone)} /> : <IcClock color={dlToneColor(d.tone)} />}
-                      {d.right}
-                    </span>
+                  </Link>
+                )) : (
+                  <div style={{ padding: '12px 0', fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--fg3)' }}>
+                    No upcoming deadlines. Open a transaction to view its full deadline timeline.
                   </div>
-                ))}
+                )}
               </div>
 
-              {/* Recent activity */}
+              {/* Activity — open individual transaction for audit trail */}
               <div className="dk-card">
                 <div className="dk-card-head">
-                  <h3>Recent activity</h3>
-                  <Link href="/audit" style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 12.5, color: 'var(--fg-brass)' }}>Audit log</Link>
+                  <h3>Activity</h3>
                 </div>
-                {MOCK_ACTIVITY.map((a, i) => (
-                  <div className="dk-audit" key={i}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: actToneColor(a.tone), flexShrink: 0, marginTop: 5 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                        <span className="dk-audit-act" style={{ color: actToneFg(a.tone) }}>{a.action}</span>
-                        <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 13, color: 'var(--fg1)' }}>{a.actor}</span>
+                <div style={{ padding: '12px 0', fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--fg3)', lineHeight: 1.6 }}>
+                  Full audit trail is available inside each transaction workspace. Select a file to view field reviews, extraction events, and task changes.
+                </div>
+                {active.slice(0, 3).map((t, i) => (
+                  <Link key={t.id} href={`/transactions/${t.id}`} style={{ textDecoration: 'none', display: 'block', padding: '8px 0', borderTop: '1px solid var(--line)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <IcHouse />
+                      <div>
+                        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: 'var(--fg1)' }}>{t.address}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg3)' }}>{t.city} · {t.stage}</div>
                       </div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--fg2)', marginTop: 2 }}>{a.target}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--fg3)', marginTop: 2 }}>{a.t} MDT</div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
 

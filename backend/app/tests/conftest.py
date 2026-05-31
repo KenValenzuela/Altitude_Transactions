@@ -36,12 +36,12 @@ def client(tmp_path) -> Generator[TestClient, None, None]:
             yield session
 
     from app.api.deps import get_session as deps_get_session
-    from app.db.seed import seed_demo_data
+    from app.db.seed import seed_initial_data
     from app.db.session import get_session as db_get_session
     from app.main import app
 
     # Ensure seed + all session usages hit the test engine.
-    seed_demo_data()
+    seed_initial_data()
 
     app.dependency_overrides[deps_get_session] = get_session_override
     app.dependency_overrides[db_get_session] = get_session_override

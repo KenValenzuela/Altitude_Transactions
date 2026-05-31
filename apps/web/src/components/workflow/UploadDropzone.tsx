@@ -32,7 +32,7 @@ export function UploadDropzone({ onFile, busy }: { onFile: (file: File) => void;
           }}
         />
         <p id={`${inputId}-help`} className="muted">
-          PDF only. Extraction is performed by the backend; this demo parser replays structured sample contract data.
+          PDF only. The backend extracts fields, deadlines, and parties from your contract automatically.
         </p>
         <p id={`${inputId}-status`} role="status" aria-live="polite">
           {busy ? `Uploading ${fileName || 'contract'}…` : fileName ? `Selected ${fileName}` : 'No file selected.'}

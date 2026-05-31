@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import type { GoFn } from '@/types';
 import type { ApiDeadline } from '@/types/api';
-import { DEMO_DETAIL } from '@/lib/fixtures';
+import { FIXTURE_DETAIL } from '@/lib/fixtures';
 import { splitDate, daysUntil, formatDateShort } from '@/lib/format';
 import { Icon } from '@/components/ui/icons';
 import { IconButton } from '@/components/ui/IconButton';
@@ -20,9 +20,9 @@ interface ScreenDeadlinesProps {
 
 export function ScreenDeadlines({
   go,
-  deadlines = DEMO_DETAIL.deadlines,
-  closeDate = DEMO_DETAIL.money.closeDate,
-  daysToClose = DEMO_DETAIL.money.daysToClose,
+  deadlines = FIXTURE_DETAIL.deadlines,
+  closeDate = FIXTURE_DETAIL.money.closeDate,
+  daysToClose = FIXTURE_DETAIL.money.daysToClose,
   title = 'Deadlines',
 }: ScreenDeadlinesProps) {
   const [view, setView] = useState<DeadlineView>('timeline');

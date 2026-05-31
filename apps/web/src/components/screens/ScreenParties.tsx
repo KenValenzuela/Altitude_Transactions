@@ -1,7 +1,7 @@
 'use client';
 import type { GoFn } from '@/types';
 import type { ApiParty } from '@/types/api';
-import { DEMO_DETAIL } from '@/lib/fixtures';
+import { FIXTURE_DETAIL } from '@/lib/fixtures';
 import { initialsFromName, partyColor, roleLabel } from '@/lib/format';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/icons';
@@ -16,7 +16,7 @@ interface ScreenPartiesProps {
 
 export function ScreenParties({
                                   go,
-                                  parties = (DEMO_DETAIL.parties ?? []) as ApiParty[],
+                                  parties = (FIXTURE_DETAIL.parties ?? []) as ApiParty[],
                                   title = 'Parties'
                               }: ScreenPartiesProps) {
   return (

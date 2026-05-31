@@ -5,7 +5,7 @@ from app.api.deps import get_current_user, get_session
 from app.models import ExtractionRun, ExtractedField, SourceDocument, Transaction, User, ExtractionStatus
 from app.schemas import ConfirmRequest, DeadlineOut, ExtractionFlag, ExtractionJobOut, ExtractedFieldOut, TransactionDetail
 from app.services import transaction_service
-from app.services.demo_workflow import DEADLINE_DATA
+from app.services.fixture_provider import DEADLINE_DATA
 
 router = APIRouter(prefix="/extractions", tags=["extractions"])
 

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import type { GoFn } from '@/types';
 import type { ApiUser } from '@/types/api';
-import { DEMO_USER } from '@/lib/fixtures';
+import { FIXTURE_USER } from '@/lib/fixtures';
 import { initialsFromName } from '@/lib/format';
 import { Monogram } from '@/components/brand/Monogram';
 import { Avatar } from '@/components/ui/Avatar';
@@ -10,13 +10,13 @@ import { Button } from '@/components/ui/Button';
 
 interface ScreenLoginProps {
   go: GoFn;
-  /** The seeded broker shown on the card. Defaults to the demo broker. */
+  /** The broker shown on the card. Defaults to the fixture broker. */
   user?: ApiUser;
   /** Establishes a session, then navigates. Defaults to the walkthrough's go(). */
   onContinue?: () => void | Promise<void>;
 }
 
-export function ScreenLogin({ go, user = DEMO_USER, onContinue }: ScreenLoginProps) {
+export function ScreenLogin({ go, user = FIXTURE_USER, onContinue }: ScreenLoginProps) {
   const [busy, setBusy] = useState(false);
 
   const handleContinue = async () => {

@@ -1,7 +1,7 @@
 'use client';
 import type { GoFn, ChecklistState } from '@/types';
 import type { TransactionDetail } from '@/types/api';
-import { DEMO_DETAIL } from '@/lib/fixtures';
+import { FIXTURE_DETAIL } from '@/lib/fixtures';
 import { formatPrice, formatDateShort } from '@/lib/format';
 import { AIBadge } from '@/components/ui/AIBadge';
 import { Button } from '@/components/ui/Button';
@@ -36,7 +36,7 @@ function deriveStages(status: TransactionDetail['status']) {
     }));
 }
 
-export function ScreenOverview({ go, detail = DEMO_DETAIL }: { go: GoFn; detail?: TransactionDetail }) {
+export function ScreenOverview({ go, detail = FIXTURE_DETAIL }: { go: GoFn; detail?: TransactionDetail }) {
   const { done, doing, todo, na, active } = detail.counts;
   const pct = active > 0 ? Math.round((done / active) * 100) : 0;
     const stages = deriveStages(detail.status);

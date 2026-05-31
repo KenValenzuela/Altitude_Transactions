@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import type { GoFn } from '@/types';
 import type { ExtractionJob } from '@/types/api';
-import { DEMO_EXTRACTION } from '@/lib/fixtures';
+import { FIXTURE_EXTRACTION } from '@/lib/fixtures';
 import { formatDateShort } from '@/lib/format';
 import { AIBadge } from '@/components/ui/AIBadge';
 import { Button } from '@/components/ui/Button';
@@ -19,7 +19,7 @@ interface ScreenReviewProps {
   busy?: boolean;
 }
 
-export function ScreenReview({ go, job = DEMO_EXTRACTION, onConfirm, busy = false }: ScreenReviewProps) {
+export function ScreenReview({ go, job = FIXTURE_EXTRACTION, onConfirm, busy = false }: ScreenReviewProps) {
   const [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const findings = job.fields;
   const deadlines = job.deadlines.filter((d) => !d.isNa);

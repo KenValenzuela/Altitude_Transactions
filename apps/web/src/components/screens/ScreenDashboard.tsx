@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import type { GoFn } from '@/types';
 import type { ApiUser, TransactionCard } from '@/types/api';
-import { DEMO_TRANSACTIONS, DEMO_USER } from '@/lib/fixtures';
+import { FIXTURE_TRANSACTIONS, FIXTURE_USER } from '@/lib/fixtures';
 import { AIBadge } from '@/components/ui/AIBadge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
@@ -21,8 +21,8 @@ interface ScreenDashboardProps {
 
 export function ScreenDashboard({
   go,
-  user = DEMO_USER,
-  transactions = DEMO_TRANSACTIONS,
+  user = FIXTURE_USER,
+  transactions = FIXTURE_TRANSACTIONS,
   onOpen,
 }: ScreenDashboardProps) {
   const [tab, setTab] = useState('home');

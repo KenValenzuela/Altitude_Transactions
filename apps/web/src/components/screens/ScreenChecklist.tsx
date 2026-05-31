@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { GoFn, ChecklistState } from '@/types';
 import type { ApiTaskGroup, TaskState } from '@/types/api';
-import { DEMO_DETAIL } from '@/lib/fixtures';
+import { FIXTURE_DETAIL } from '@/lib/fixtures';
 import { STATE_CFG, nextState } from '@/lib/state';
 import { AIBadge } from '@/components/ui/AIBadge';
 import { Button } from '@/components/ui/Button';
@@ -15,7 +15,7 @@ type FilterKey = 'all' | 'active' | 'done' | 'na';
 
 interface ScreenChecklistProps {
   go: GoFn;
-  /** Checklist groups (post-close items are filtered out). Defaults to the demo transaction. */
+  /** Checklist groups (post-close items are filtered out). Defaults to the fixture transaction. */
   groups?: ApiTaskGroup[];
   /** Persist a task state change. Defaults to local-only (walkthrough). */
   onSetState?: (taskId: string, state: TaskState) => void | Promise<void>;
@@ -25,7 +25,7 @@ interface ScreenChecklistProps {
 
 export function ScreenChecklist({
   go,
-  groups: groupsProp = DEMO_DETAIL.tasks,
+  groups: groupsProp = FIXTURE_DETAIL.tasks,
   onSetState,
   title = 'Contract to close',
 }: ScreenChecklistProps) {

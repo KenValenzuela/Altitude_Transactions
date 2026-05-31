@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { GoFn } from '@/types';
 import type {ApiDocumentState} from '@/types/api';
 import type {DocumentRequirement as ApiDocument} from '@/types/domain';
-import { DEMO_DETAIL } from '@/lib/fixtures';
+import { FIXTURE_DETAIL } from '@/lib/fixtures';
 import { Icon } from '@/components/ui/icons';
 import { IconButton } from '@/components/ui/IconButton';
 import { TopBar } from '@/components/ui/TopBar';
@@ -81,7 +81,7 @@ interface ScreenDocumentsProps {
 
 export function ScreenDocuments({
   go,
-                                    documents = DEMO_DETAIL.documents ?? [],
+                                    documents = FIXTURE_DETAIL.documents ?? [],
   onSetState,
   title = 'Documents',
 }: ScreenDocumentsProps) {

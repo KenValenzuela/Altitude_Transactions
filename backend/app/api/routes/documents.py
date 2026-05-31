@@ -4,7 +4,7 @@ from sqlmodel import Session
 from app.api.deps import get_current_user, get_session
 from app.models import DocumentRequirement, ReceivedStatus, SourceDocument, User
 from app.schemas import DocumentPatch, DocumentRequirementOut, UploadOut
-from app.services.demo_workflow import create_source_document
+from app.services.fixture_provider import create_source_document
 
 PDF_CONTENT_TYPES = {"application/pdf", "application/x-pdf"}
 router = APIRouter(prefix="/documents", tags=["documents"])

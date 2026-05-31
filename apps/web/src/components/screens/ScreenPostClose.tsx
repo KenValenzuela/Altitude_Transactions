@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { GoFn, ChecklistState } from '@/types';
 import type { ApiTask, TaskState, TransactionDetail } from '@/types/api';
-import { DEMO_DETAIL } from '@/lib/fixtures';
+import { FIXTURE_DETAIL } from '@/lib/fixtures';
 import { nextState } from '@/lib/state';
 import { AIBadge } from '@/components/ui/AIBadge';
 import { Button } from '@/components/ui/Button';
@@ -18,7 +18,7 @@ interface ScreenPostCloseProps {
   onSetState?: (taskId: string, state: TaskState) => void | Promise<void>;
 }
 
-export function ScreenPostClose({ go, detail = DEMO_DETAIL, onSetState }: ScreenPostCloseProps) {
+export function ScreenPostClose({ go, detail = FIXTURE_DETAIL, onSetState }: ScreenPostCloseProps) {
   const postClose = detail.tasks.flatMap((g) => g.items).filter((t) => t.isPostClose);
   const [tasks, setTasks] = useState<ApiTask[]>(postClose);
   useEffect(() => {

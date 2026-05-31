@@ -61,8 +61,8 @@ export default function LandingPage() {
 
                     {/* Nav links — hidden on mobile */}
                     <div style={{display: 'flex', alignItems: 'center', gap: 6}} aria-label="Site links">
-                        <Link href="/walkthrough" className="nav-ghost-link">
-                            Demo
+                        <Link href="/upload" className="nav-ghost-link">
+                            Upload
                         </Link>
                         <Link href="/dashboard" style={{
                             color: 'var(--alt-navy)',
@@ -558,7 +558,6 @@ export default function LandingPage() {
                         <nav aria-label="Footer navigation" style={{display: 'flex', gap: 20}}>
                             {[
                                 {label: 'Dashboard', href: '/dashboard'},
-                                {label: 'Demo', href: '/walkthrough'},
                                 {label: 'Upload', href: '/upload'},
                             ].map((link) => (
                                 <Link
