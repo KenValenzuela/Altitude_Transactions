@@ -30,10 +30,17 @@ backend/uploads/*
 # --- IDE ---
 .idea/
 
-# --- AI assistant tool artifacts (not needed in version control) ---
-# .agent/ is a duplicate of .claude/skills/ installed by the skill runner
-.agent/
-# .github/prompts/ contains skill prompt copies; keep .github/ available for real CI workflows
-.github/prompts/
-# settings.local.json is machine-specific; .claude/skills/ is intentionally tracked
+# --- AI assistant tooling (COBIT BAI10 / NIST CM-6) ---
+# Developer tooling state is environment-level config, not application config.
+# Committing it violates separation of concerns, pollutes audit history with
+# tool churn, and introduces third-party scripts into the project supply chain
+# (NIST SP 800-161 / SSDF PW.4). Skills reinstall automatically on first use.
+#
+# .claude/skills/  — Claude Code skill data and Python scripts (env-level tooling)
+# .claude/settings.local.json — machine-specific overrides (never share)
+# .agent/          — duplicate skill install created by the skill runner
+# .github/prompts/ — skill prompt copies (.github/ kept for real CI workflows)
+.claude/skills/
 .claude/settings.local.json
+.agent/
+.github/prompts/
