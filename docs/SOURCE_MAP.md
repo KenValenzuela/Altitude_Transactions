@@ -15,4 +15,7 @@ Altitude Transactions is intentionally modeled around Colorado real estate trans
 | post_close_tasks | Thank You Tracking chart | Thank-you/review/referral/CRM follow-up | Post-close workflow |
 | audit_events | AI human-review requirement | AI never final compliance judge | Accountability history |
 
-The deterministic extractor seeds the CTME example values for 4902 Cherry Springs Drive and preserves source document, page, section, confidence, and population status for review. N/A values become `not_applicable`, COMPLETED values become `completed`, and redacted party names become `redacted_in_source`.
+The `FixtureExtractionProvider` (`backend/app/services/fixture_provider.py`) seeds the CTME example values for 4902
+Cherry Springs Drive and preserves source document, page, section, confidence, and population status for review. N/A
+values become `not_applicable`, COMPLETED values become `completed`, and redacted party names become
+`redacted_in_source`.

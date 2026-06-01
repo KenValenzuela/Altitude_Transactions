@@ -1,7 +1,7 @@
 # Altitude Mobile — Expo / React Native Implementation Checklist
 
-**Date:** 2026-05-29
-**Status:** Planning — awaiting Brett's approval before `apps/mobile` is created
+**Date:** 2026-05-31 (updated)
+**Status:** Gate 2 complete — `apps/mobile` scaffold created and wired to monorepo
 **Dependency:** `packages/shared` types established (complete)
 
 ---
@@ -36,14 +36,14 @@ codebase.
 
 ---
 
-## Proposed repo structure (not yet created)
+## Current repo structure
 
 ```
 Altitude_Transactions_PT/
 ├── apps/
-│   ├── mobile/          ← Expo React Native broker + client app  [NOT YET CREATED]
+│   ├── mobile/          ← Expo React Native broker app  [CREATED — Expo Router, tab nav]
 │   ├── web/             ← Next.js web portal (apps/web/)
-│   └── api/             ← FastAPI backend (currently backend/)
+├── backend/             ← FastAPI backend
 ├── packages/
 │   └── shared/          ← Shared types, theme, constants  [CREATED]
 │       └── src/
@@ -51,10 +51,8 @@ Altitude_Transactions_PT/
 │           ├── domain.ts
 │           ├── theme.ts
 │           └── constants.ts
-└── (workspace config)   ← pnpm-workspace.yaml or turbo.json  [NOT YET CREATED]
+└── package.json         ← npm workspaces config  [CREATED]
 ```
-
-**Important:** `frontend/` and `backend/` remain in place until the monorepo migration is approved and verified.
 
 ---
 
@@ -68,23 +66,21 @@ Altitude_Transactions_PT/
 - [x] Landing page at `/` tells the product story
 - [x] Build passes cleanly
 
-### Gate 1 — Monorepo wiring (requires Brett's approval)
+### Gate 1 — Monorepo wiring (complete)
 
-- [ ] Decide: pnpm workspaces or Turborepo
-- [ ] Create root `package.json` with workspaces config
-- [x] `apps/web/` is now the canonical web app location
-- [ ] Verify `backend/` still runs as `apps/api`
-- [ ] Wire `packages/shared` so both apps can import it
-- **Do not proceed to Gate 2 until Gate 1 builds are verified**
+- [x] npm workspaces config in root `package.json`
+- [x] `apps/web/` is the canonical web app location
+- [x] `backend/` remains at root
+- [x] `packages/shared` wired to both apps
 
-### Gate 2 — Expo app shell (requires Gate 1 + Brett's approval)
+### Gate 2 — Expo app shell (complete)
 
-- [ ] `npx create-expo-app apps/mobile --template blank-typescript`
-- [ ] Configure Expo Router file-based navigation
-- [ ] Load `packages/shared/theme.ts` as the design token source
-- [ ] Load Geist font via `expo-font` (or system font fallback)
-- [ ] Basic app shell: navigation structure, empty screens, no data
-- [ ] Verify app opens on iOS Simulator
+- [x] `apps/mobile/` created with Expo Router file-based navigation
+- [x] `packages/shared/theme.ts` used as design token source (`AltitudeTheme`)
+- [x] Bottom tab navigation: Dashboard, Transactions, Upload, Settings
+- [x] Transaction detail screen (`app/transaction/[id].tsx`)
+- [x] Login screen
+- [x] App opens on iOS Simulator
 
 ### Gate 3 — Auth and session
 

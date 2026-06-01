@@ -1,7 +1,7 @@
 # Altitude Transactions — Mobile-Native Product Strategy
 
-**Date:** 2026-05-29
-**Status:** Approved direction — implementation in progress
+**Date:** 2026-05-31 (updated)
+**Status:** Gate 2 complete — Expo scaffold live in `apps/mobile/`
 
 ---
 
@@ -14,18 +14,20 @@
 | Web frontend     | Next.js 15, React 18, TypeScript, App Router                  | Active and working           |
 | Backend API      | FastAPI + SQLModel, Python 3.11+, SQLite                      | Active and working           |
 | Styling          | CSS custom properties (no Tailwind), Instrument Serif + Geist | Well-structured token system |
-| Mobile           | None                                                          | Not yet started              |
-| Monorepo tooling | None (independent apps/web/ and backend/ folders)             | Not yet wired                |
+| Mobile           | Expo React Native, Expo Router, TypeScript                    | Scaffolded — `apps/mobile/`  |
+| Monorepo tooling | npm workspaces, root `package.json`                           | Wired                        |
 
 ### Repo structure summary
 
 ```
 Altitude_Transactions_PT/
-├── apps/web/       ← Next.js 15 web app (active source of truth)
+├── apps/
+│   ├── web/        ← Next.js 15 web app (active source of truth)
+│   └── mobile/     ← Expo React Native app (scaffold complete)
 ├── backend/        ← FastAPI API (active source of truth)
-├── project/        ← Original HTML prototype + brand assets
-├── docs/           ← Architecture, API, UX, and strategy documentation
-└── .claude/        ← Claude Code skill files (UI/UX Pro Max)
+├── packages/
+│   └── shared/     ← Shared types, theme, domain constants
+└── docs/           ← Architecture, API, UX, and strategy documentation
 ```
 
 ### Current working routes (Next.js App Router)
@@ -42,7 +44,6 @@ Altitude_Transactions_PT/
 - `/transactions/[id]/contacts` — parties and contacts
 - `/transactions/[id]/documents` — document requirements
 - `/transactions/[id]/audit` — audit history
-- `/walkthrough` — interactive demo
 
 ### Current API (FastAPI — working endpoints)
 
@@ -71,8 +72,8 @@ GET    /api/transactions/{id}/audit
 
 ### Visual source
 
-`project/uploads/Altitude_Transactions_Inspiration.png` — a dark navy brand signage panel with a 3D metallic gold
-mountain range logo, wide-tracked serif "ALTITUDE" in caps, and the tagline "Elevated service. Intelligence systems."
+Brand inspiration: dark navy with a 3D metallic gold mountain range logo, wide-tracked serif "ALTITUDE" in caps,
+and the tagline "Elevated service. Intelligent systems."
 
 ### What to extract
 
@@ -173,7 +174,6 @@ A PWA or responsive website cannot match this. Native UX signals quality in a wa
 | Route                 | Purpose                                       |
 |-----------------------|-----------------------------------------------|
 | `/`                   | Public landing page with product story        |
-| `/walkthrough`        | Interactive PhoneShell demo for presentations |
 | `/dashboard`          | Broker/admin desktop operations cockpit       |
 | `/transactions/[id]`  | Full transaction workspace (all sub-routes)   |
 | `/upload` + `/review` | Desktop PDF upload and extraction review      |

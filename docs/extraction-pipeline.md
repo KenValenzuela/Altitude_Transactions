@@ -79,7 +79,7 @@ No live OCR or LLM extraction is active. See ADR-002 for the swap plan.
 
 ## Stage 2: Field Extraction (Currently: Fixture Provider)
 
-**Provider:** `FixtureExtractionProvider` (in `demo_workflow.py` / `extraction_service.py`)  
+**Provider:** `FixtureExtractionProvider` (in `fixture_provider.py` / `extraction_service.py`)  
 **What happens:**
 - Reads `backend/app/services/data/sample_contract_extraction.json`
 - Returns structured `ExtractionResult` with fields, deadlines, flags, and party data
@@ -127,7 +127,7 @@ from the actual contract text at the source anchor.
 
 ## Stage 4: Task Generation
 
-**Source:** `TASK_MAP` in `demo_workflow.py` — maps deadline event names to operational task titles  
+**Source:** `TASK_MAP` in `fixture_provider.py` — maps deadline event names to operational task titles  
 **Pattern:** One task per critical deadline (12 mapped deadlines)  
 **Additional tasks:** Closing logistics + possession logistics (2 more)  
 **Each task includes:**

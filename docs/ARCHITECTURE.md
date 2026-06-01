@@ -11,18 +11,23 @@ The active app is TypeScript-first under `apps/web/src/app` using the Next.js Ap
 - `/transactions/[id]` for the overview workspace.
 - `/transactions/[id]/review`, `/deadlines`, `/tasks`, `/contacts`, `/documents`, and `/audit` for focused operational views.
 
-Old `/checklist`, `/parties`, `/summary`, and `/postclose` routes redirect into the operations model. Legacy JSX
-prototypes are archived in `project/archive/legacy-jsx-prototypes/`; `apps/web/src` is the source of truth.
+`apps/web/src` is the source of truth. Legacy routes (`/checklist`, `/parties`, `/summary`, `/postclose`) now exist as
+sub-routes under `/transactions/[id]`.
 
 ## Backend module structure
 
-`backend/app/models` defines SQLModel tables for transactions, source documents, extraction runs, extracted fields, deadlines, tasks, contacts, document requirements, post-close tasks, and audit events. `backend/app/services/demo_workflow.py` contains the deterministic CTME demo extractor and generation logic. API routes under `backend/app/api/routes` expose upload, extraction, transaction, task, field review, contact, document, and audit endpoints.
+`backend/app/models` defines SQLModel tables for transactions, source documents, extraction runs, extracted fields,
+deadlines, tasks, contacts, document requirements, post-close tasks, and audit events.
+`backend/app/services/fixture_provider.py` contains the `FixtureExtractionProvider` that replays sample contract data.
+API routes under `backend/app/api/routes` expose upload, extraction, transaction, task, field review, contact, document,
+and audit endpoints.
 
 ## Data flow
 
 1. Brett uploads a CTME PDF through `POST /api/documents/upload`.
 2. The backend creates `source_documents` and `extraction_runs` rows.
-3. The deterministic extractor materializes source-backed `extracted_fields`, row-based `deadlines`, generated operational `tasks`, real estate `contacts`, `document_requirements`, `post_close_tasks`, and `audit_events`.
+3. The `FixtureExtractionProvider` materializes source-backed `extracted_fields`, row-based `deadlines`, generated
+   operational `tasks`, real estate `contacts`, `document_requirements`, `post_close_tasks`, and `audit_events`.
 4. The frontend polls extraction status and shows progress.
 5. Brett reviews and approves/edits fields using `PATCH /api/extracted-fields/{id}`.
 6. The transaction workspace reads populated operational data from `/api/transactions/{id}` and focused subresource endpoints.

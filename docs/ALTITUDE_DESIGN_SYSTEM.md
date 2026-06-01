@@ -2,8 +2,8 @@
 
 **Date:** 2026-05-29
 **Stack:** Next.js 15 (web) → React Native / Expo (mobile, planned)
-**Source of truth for CSS tokens:** `project/tokens.css` and `apps/web/src/app/globals.css`
-**Source of truth for shared theme:** `packages/shared/src/theme.ts` (planned Phase 4)
+**Source of truth for CSS tokens:** `apps/web/src/app/globals.css`
+**Source of truth for shared theme:** `packages/shared/src/theme.ts`
 
 ---
 
@@ -392,5 +392,4 @@ Gold is a **signal of importance**, not a decoration. It appears in exactly thes
 | Z-index scale (`--z-*`) | No                       | No                      | **To add in Phase 2 CSS update**                 |
 | Skip link class         | No                       | No                      | **To add in Phase 2 CSS update**                 |
 
-See `apps/web/src/app/globals.css` for the live implementation and `project/tokens.css` for the documented canonical
-version.
+See `apps/web/src/app/globals.css` for the live implementation.

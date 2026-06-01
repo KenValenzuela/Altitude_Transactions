@@ -1,6 +1,10 @@
 # Altitude UX, Visual Design, Accessibility, and Architecture Audit
 
 Date: 2026-05-30
+**Resolved:** The P0 items below were the pre-productionization audit. The productionization sprint (commit `6dda28d`)
+addressed all P0 issues: task mutations wired, workspace nav routes implemented, upload state/a11y improved, and design
+system tokens applied. This document is preserved as the audit record.
+
 Scope: Next.js App Router frontend, FastAPI API boundaries, typed workflow for dashboard → upload → extraction review → transaction workspace.
 
 ## Executive summary

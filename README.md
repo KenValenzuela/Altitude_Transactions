@@ -19,9 +19,7 @@ altitude/
 ├── backend/           FastAPI · SQLModel · SQLite (Postgres-compatible)
 ├── packages/
 │   └── shared/        Shared types · theme · domain constants
-├── docs/              Architecture, API contracts, design system docs
-├── project/           Original design prototype + real sample contract data
-└── chats/             Original design conversation transcripts (reference)
+└── docs/              Architecture, API contracts, design system docs
 ```
 
 ## The core workflow
@@ -67,7 +65,6 @@ uvicorn app.main:app --reload --port 8000
 ```bash
 cd apps/web
 npm install
-cp .env.example .env.local   # optional; defaults already point at :8000
 npm run dev
 ```
 
@@ -115,8 +112,8 @@ Open `http://localhost:3000` → you land on `/dashboard`. If you use `/login`, 
   `POST /api/auth/session` returns a fixed token. The dependency is real-shaped
   so it can be replaced with real auth without touching call sites.
 - **Frontend fixtures.** `apps/web/src/lib/fixtures.ts` holds typed demo data
-  (in the exact API shape) used **only** by the `/walkthrough` route and as
-  offline fallbacks. It is never sent anywhere and is separate from the API client.
+  (in the exact API shape) used as offline fallbacks. It is never sent anywhere
+  and is separate from the API client.
 
 ## Architecture notes
 
@@ -192,9 +189,8 @@ cd apps/web && npm run build  # typecheck + production build
 
 ## Prototype & history
 
-The original design prototype is preserved and runnable at **`/walkthrough`** — a
-12-screen, phone-framed demo with a "Tweaks" panel, useful for stakeholder
-walk-throughs. Its source intent lives in `project/` and `chats/`. The single
-most valuable historical asset is
-`project/uploads/altitude_contract_metadata_extraction.json` — the real CTM
-contract extraction that defines the domain model and feeds the mock extractor.
+The original design prototype was used to define the domain model and drove the
+initial contract data schema. The real CTM CBS1-8-24 extraction that bootstrapped
+the domain model is bundled as
+`backend/app/services/data/sample_contract_extraction.json` and is what the
+`FixtureExtractionProvider` replays during development.

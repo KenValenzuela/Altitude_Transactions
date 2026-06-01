@@ -71,7 +71,7 @@ Brett must confirm which path is the launch path before:
 
 The current extraction pipeline does not perform real OCR or LLM extraction.
 `MockExtractionService` (in `backend/app/services/extraction_service.py`) and the
-`FixtureExtractionProvider` (in `backend/app/services/demo_workflow.py`) replay a
+`FixtureExtractionProvider` (in `backend/app/services/fixture_provider.py`) replay a
 pre-structured extraction of a real Colorado CBS contract
 (4902 Cherry Springs Drive, Colorado Springs, CO 80923).
 
