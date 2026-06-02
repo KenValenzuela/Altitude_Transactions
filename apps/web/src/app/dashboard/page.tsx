@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api, getStoredUser } from '@/lib/api-client';
-import type { TransactionCard as TxnType } from '@/types/domain';
-import { AppShell } from '@/components/workflow/AppShell';
-import { EmptyState } from '@/components/workflow/EmptyState';
-import { ErrorState } from '@/components/workflow/ErrorState';
-import { LoadingState } from '@/components/workflow/LoadingState';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {api, getStoredUser} from '@/lib/api-client';
+import type {TransactionCard as TxnType} from '@/types/domain';
+import {AppShell} from '@/components/workflow/AppShell';
+import {EmptyState} from '@/components/workflow/EmptyState';
+import {ErrorState} from '@/components/workflow/ErrorState';
+import {LoadingState} from '@/components/workflow/LoadingState';
 
 /* ── Tiny icon helpers ── */
 function IcHouse() {
@@ -30,6 +30,24 @@ function IcListChecks() {
 }
 function IcShield() {
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>;
+}
+
+function IcActivity() {
+    return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>;
+}
+
+/* ── Derive a short status line for activity feed ── */
+function activityLine(t: TxnType): { text: string; tone: string } {
+    if (t.urgent) return {text: `Deadline in ${t.daysToClose}d — review now`, tone: 'risk'};
+    const s = (t.stage ?? '').toLowerCase();
+    if (s.includes('review')) return {text: 'Awaiting human review of extracted fields', tone: 'warn'};
+    if (s.includes('closing')) return {text: `Closing in ${t.daysToClose}d`, tone: 'warn'};
+    if (s.includes('closed') || s.includes('clear')) return {text: 'File closed', tone: 'ok'};
+    if (t.next) return {text: t.next, tone: 'neutral'};
+    return {text: 'Active — no upcoming deadline flagged', tone: 'neutral'};
 }
 
 /* ── Derived tone from transaction data ── */
@@ -61,17 +79,27 @@ function DealRow({ t, border }: { t: TxnType; border?: boolean }) {
   const pct = Math.round(t.progress * 100);
   return (
     <Link href={`/transactions/${t.id}`} style={{ textDecoration: 'none', display: 'block' }}>
-      <div className="dk-deal" style={border ? { borderTop: '1px solid var(--line)', gridTemplateColumns: '44px 1fr 180px auto', gap: 16 } : { gridTemplateColumns: '44px 1fr 180px auto', gap: 16 }}>
+        <div
+            className="dk-deal"
+            style={border ? {borderTop: '1px solid var(--line)'} : {}}
+        >
         <div className="dk-deal-thumb"><IcHouse /></div>
-        <div style={{ minWidth: 0 }}>
+            <div style={{minWidth: 0, flex: 1}}>
           <div className="dk-deal-addr">{t.address}</div>
           <div className="dk-deal-sub">{t.city} · {t.stage} · ${t.price.toLocaleString()}</div>
-          <div className="dk-deal-id">{t.id}</div>
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11.5, color: 'var(--fg3)', marginBottom: 5 }}>{pct}% complete</div>
-          <div style={{ height: 5, background: 'var(--paper-200)', borderRadius: 99, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${pct}%`, background: edgeColor, borderRadius: 99 }} />
+                {/* Progress inline for mobile — avoids 4-column overflow */}
+                <div style={{display: 'flex', alignItems: 'center', gap: 8, marginTop: 5}}>
+                    <div style={{
+                        flex: 1,
+                        maxWidth: 120,
+                        height: 4,
+                        background: 'var(--paper-200)',
+                        borderRadius: 99,
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{height: '100%', width: `${pct}%`, background: edgeColor, borderRadius: 99}}/>
+                    </div>
+                    <span className="meta">{pct}%</span>
           </div>
         </div>
         <Chip label={t.urgent ? 'Deadline Risk' : t.stage} tone={tone} />
@@ -106,7 +134,16 @@ export default function DashboardPage() {
   const [cards, setCards] = useState<TxnType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const brokerName = getStoredUser()?.name?.split(' ')[0] ?? 'there';
+    const [brokerName, setBrokerName] = useState('there');
+    const [greeting, setGreeting] = useState('Good morning');
+    const [dayLabel, setDayLabel] = useState('');
+
+    useEffect(() => {
+        const name = getStoredUser()?.name?.split(' ')[0];
+        if (name) setBrokerName(name);
+        setGreeting(getGreeting());
+        setDayLabel(getDayLabel());
+    }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -161,8 +198,8 @@ export default function DashboardPage() {
       {/* ── Page head ── */}
       <div className="dk-pagehead">
         <div>
-          <div className="dk-eyebrow">{getDayLabel()}</div>
-          <h1 className="dk-h1">{getGreeting()}, {brokerName}</h1>
+            <div className="dk-eyebrow">{dayLabel}</div>
+            <h1 className="dk-h1">{greeting}, {brokerName}</h1>
           <p className="dk-sub">
             {summary.atRisk > 0
               ? `${summary.atRisk} file${summary.atRisk !== 1 ? 's' : ''} have deadline risk. Review before they become critical.`
@@ -307,41 +344,99 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Activity — open individual transaction for audit trail */}
+                {/* Recent file status ── derived from live card data */}
               <div className="dk-card">
                 <div className="dk-card-head">
-                  <h3>Activity</h3>
+                    <h3>Recent files</h3>
+                    <Link href="/transactions" style={{
+                        fontFamily: 'var(--font-sans)',
+                        fontWeight: 600,
+                        fontSize: 12.5,
+                        color: 'var(--fg-brass)'
+                    }}>
+                        All files
+                    </Link>
                 </div>
-                <div style={{ padding: '12px 0', fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--fg3)', lineHeight: 1.6 }}>
-                  Full audit trail is available inside each transaction workspace. Select a file to view field reviews, extraction events, and task changes.
-                </div>
-                {active.slice(0, 3).map((t, i) => (
-                  <Link key={t.id} href={`/transactions/${t.id}`} style={{ textDecoration: 'none', display: 'block', padding: '8px 0', borderTop: '1px solid var(--line)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <IcHouse />
-                      <div>
-                        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: 'var(--fg1)' }}>{t.address}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg3)' }}>{t.city} · {t.stage}</div>
+                  {cards.slice(0, 5).map((t, i) => {
+                      const {text, tone} = activityLine(t);
+                      const dotColor = {
+                          risk: 'var(--risk)',
+                          warn: 'var(--warn)',
+                          ok: 'var(--ok)',
+                          neutral: 'var(--paper-300)'
+                      }[tone];
+                      const textColor = {
+                          risk: 'var(--risk-text)',
+                          warn: 'var(--warn-text)',
+                          ok: 'var(--ok-text)',
+                          neutral: 'var(--fg3)'
+                      }[tone];
+                      return (
+                          <Link key={t.id} href={`/transactions/${t.id}`}
+                                style={{textDecoration: 'none', display: 'block'}}>
+                              <div className="dk-audit" style={i > 0 ? {} : {borderTop: 'none'}}>
+                        <span
+                            className="dk-audit-act"
+                            style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                background: dotColor,
+                                flexShrink: 0,
+                                marginTop: 6,
+                                display: 'inline-block'
+                            }}
+                            aria-hidden="true"
+                        />
+                                  <div style={{flex: 1, minWidth: 0}}>
+                                      <div style={{
+                                          fontFamily: 'var(--font-sans)',
+                                          fontWeight: 600,
+                                          fontSize: 13,
+                                          color: 'var(--fg1)',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap'
+                                      }}>
+                                          {t.address}
+                                      </div>
+                                      <div style={{
+                                          fontFamily: 'var(--font-sans)',
+                                          fontSize: 12,
+                                          color: textColor,
+                                          marginTop: 1
+                                      }}>
+                                          <IcActivity/> {text}
+                                      </div>
+                                      <div style={{
+                                          fontFamily: 'var(--font-mono)',
+                                          fontSize: 10.5,
+                                          color: 'var(--fg3)',
+                                          marginTop: 2
+                                      }}>
+                                          {t.city} · {Math.round(t.progress * 100)}% complete
+                                      </div>
+                                  </div>
+                              </div>
+                          </Link>
+                      );
+                  })}
+                  {cards.length === 0 && (
+                      <div style={{
+                          padding: '12px 18px',
+                          fontFamily: 'var(--font-sans)',
+                          fontSize: 13,
+                          color: 'var(--fg3)'
+                      }}>
+                          No active files. Upload a contract to get started.
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                  )}
               </div>
 
               {/* Compliance note */}
-              <div style={{
-                background: 'var(--ok-surface)',
-                border: '1px solid var(--ok-line)',
-                borderRadius: 'var(--r-md)',
-                padding: '13px 16px',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 10,
-              }}>
+                <div className="dk-notice dk-notice--ok">
                 <IcShield />
-                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--fg1)', lineHeight: 1.5 }}>
-                  Tamper-evident audit trail — every action is timestamped and attributed. AI output is held for human review before any value is treated as final.
-                </span>
+                    <span>Tamper-evident audit trail — every action is timestamped and attributed. AI output is held for human review before any value is treated as final.</span>
               </div>
             </div>
           </div>

@@ -6,568 +6,308 @@ export const metadata = {
         'Altitude turns CTME-exported contracts into a mobile transaction workspace. AI extraction, broker review, deadline tracking, and closeout — all from your phone.',
 };
 
+/* ── Feature SVG icons ─────────────────────────────────────── */
+function IcCalendar() {
+    return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>;
+}
+
+function IcCheckSquare() {
+    return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polyline points="9 11 12 14 22 4"/>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+    </svg>;
+}
+
+function IcUsers() {
+    return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>;
+}
+
+function IcFileText() {
+    return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+    </svg>;
+}
+
+function IcShieldCheck() {
+    return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <polyline points="9 12 11 14 15 10"/>
+    </svg>;
+}
+
+function IcCheckCircle() {
+    return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>;
+}
+
+function IcArrowRight() {
+    return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M5 12h14"/>
+        <path d="m12 5 7 7-7 7"/>
+    </svg>;
+}
+
+const BRAND_MARK_SVG = (
+    <svg width="20" height="16" viewBox="0 0 22 17" fill="none" aria-hidden="true">
+        <path d="M11 1L17.5 12.5H4.5L11 1Z" fill="white" opacity="0.95"/>
+        <path d="M16 4.5L21.5 12.5H10.5L16 4.5Z" fill="white" opacity="0.5"/>
+        <path d="M5.5 6.5L10 12.5H1L5.5 6.5Z" fill="white" opacity="0.35"/>
+    </svg>
+);
+
+const BRAND_MARK_SM = (
+    <svg width="15" height="11" viewBox="0 0 18 13" fill="none" aria-hidden="true">
+        <path d="M9 1L14 10H4L9 1Z" fill="white" opacity="0.95"/>
+        <path d="M13.5 4L17.5 10H9.5L13.5 4Z" fill="white" opacity="0.5"/>
+    </svg>
+);
+
+const STEPS = [
+    {
+        n: '01',
+        title: 'Export from CTME',
+        body: 'Generate your contract PDF in CTME as you normally would. Nothing changes in your contract workflow.',
+    },
+    {
+        n: '02',
+        title: 'Upload to Altitude',
+        body: 'Drag the PDF into Altitude on desktop or photograph it from your phone. Upload takes seconds.',
+    },
+    {
+        n: '03',
+        title: 'AI extracts the details',
+        body: 'Altitude reads deadlines, parties, amounts, dates, and N/A fields from the contract automatically.',
+    },
+    {
+        n: '04',
+        title: 'You review every field',
+        body: 'Every extracted value is presented for your approval. Edit or reject anything before it becomes part of your file.',
+    },
+    {
+        n: '05',
+        title: 'Your workspace is live',
+        body: 'Confirm and your transaction opens: timeline, task checklist, contact matrix, document tracker, and closeout log.',
+    },
+];
+
+const FEATURES = [
+    {
+        label: 'Deadline timeline',
+        desc: 'Every CTME deadline extracted, dated, and tracked. Overdue items surface immediately. Today marker shows where you stand.',
+        icon: <IcCalendar/>,
+        iconClass: 'lp-feature-icon--warn',
+    },
+    {
+        label: 'Task checklist',
+        desc: 'Operational tasks generated from your contract. Complete them from your phone as you move through the deal.',
+        icon: <IcCheckSquare/>,
+        iconClass: 'lp-feature-icon--navy',
+    },
+    {
+        label: 'Contact matrix',
+        desc: 'Buyer, seller, lenders, title, inspectors — all parties and vendors in one tap-to-call contact screen.',
+        icon: <IcUsers/>,
+        iconClass: 'lp-feature-icon--navy',
+    },
+    {
+        label: 'Document tracker',
+        desc: 'Required, conditional, and missing documents tracked against the Colorado transaction checklist.',
+        icon: <IcFileText/>,
+        iconClass: 'lp-feature-icon--gold',
+    },
+    {
+        label: 'Source-backed review',
+        desc: 'AI extraction is a starting point. Every extracted field shows its source evidence — you approve before anything becomes part of the file.',
+        icon: <IcShieldCheck/>,
+        iconClass: 'lp-feature-icon--navy',
+    },
+    {
+        label: 'Closeout tracking',
+        desc: 'Post-close tasks, thank-you follow-up, review requests, and referral tracking — nothing falls through after closing.',
+        icon: <IcCheckCircle/>,
+        iconClass: 'lp-feature-icon--ok',
+    },
+];
+
+const TRUST_STATS = [
+    {label: 'Source-backed extraction', sub: 'Every AI field is broker-reviewed'},
+    {label: 'Mobile-first design', sub: 'Built for brokers in the field'},
+    {label: 'Full audit trail', sub: 'Every action logged and timestamped'},
+];
+
 export default function LandingPage() {
     return (
-        <div style={{fontFamily: 'var(--f-sans)', background: 'var(--bone)', color: 'var(--ink)'}}>
+        <div className="alt-lp-root">
             <a href="#main-content" className="skip-link">Skip to main content</a>
 
-            {/* ── Navigation ─────────────────────────────────────────────── */}
-            <nav
-                role="navigation"
-                aria-label="Main navigation"
-                style={{
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 'var(--z-overlay)' as React.CSSProperties['zIndex'],
-                    background: 'rgba(20,34,63,0.97)',
-                    backdropFilter: 'blur(12px)',
-                    borderBottom: '1px solid rgba(255,255,255,0.08)',
-                    padding: '0 clamp(1rem, 5vw, 3rem)',
-                }}
-            >
-                <div style={{
-                    maxWidth: 1180,
-                    margin: '0 auto',
-                    height: 56,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 16,
-                }}>
-                    {/* Logo */}
-                    <Link href="/" aria-label="Altitude — home"
-                          style={{display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none'}}>
-                        <div style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: 9,
-                            background: 'linear-gradient(150deg,#E7CB7E 0%,#C9A14A 45%,#9C7726 78%,#D8B968 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                            boxShadow: '0 2px 8px rgba(0,0,0,.25)',
-                        }}>
-                            <svg width="20" height="16" viewBox="0 0 22 17" fill="none" aria-hidden="true">
-                                <path d="M11 1L17.5 12.5H4.5L11 1Z" fill="white" opacity="0.95"/>
-                                <path d="M16 4.5L21.5 12.5H10.5L16 4.5Z" fill="white" opacity="0.5"/>
-                                <path d="M5.5 6.5L10 12.5H1L5.5 6.5Z" fill="white" opacity="0.35"/>
-                            </svg>
-                        </div>
-                        <span style={{color: 'white', fontWeight: 700, fontSize: 15.5, letterSpacing: '-0.015em'}}>
-              Altitude
-            </span>
+            {/* ── Navigation ──────────────────────────────────────── */}
+            <nav className="lp-nav" role="navigation" aria-label="Main navigation">
+                <div className="lp-nav-inner">
+                    <Link href="/" className="lp-brand" aria-label="Altitude — home">
+                        <span className="lp-brand-mark">{BRAND_MARK_SVG}</span>
+                        <span className="lp-brand-name">Altitude</span>
                     </Link>
-
-                    {/* Nav links — hidden on mobile */}
-                    <div style={{display: 'flex', alignItems: 'center', gap: 6}} aria-label="Site links">
-                        <Link href="/upload" className="nav-ghost-link">
-                            Upload
-                        </Link>
-                        <Link href="/dashboard" style={{
-                            color: 'var(--alt-navy)',
-                            textDecoration: 'none',
-                            fontSize: 14,
-                            fontWeight: 700,
-                            padding: '7px 18px',
-                            borderRadius: 999,
-                            background: 'var(--alt-gold)',
-                            transition: 'background 0.15s',
-                            minHeight: 38,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                        }}>
-                            Open dashboard
-                        </Link>
+                    <div className="lp-nav-actions" aria-label="Site links">
+                        <Link href="/login" className="lp-nav-signin">Sign in</Link>
+                        <Link href="/login" className="lp-nav-cta">Get started</Link>
                     </div>
                 </div>
             </nav>
 
-            {/* ── Hero ───────────────────────────────────────────────────── */}
+            {/* ── Hero ────────────────────────────────────────────── */}
             <main id="main-content">
-                <section
-                    className="alt-topo"
-                    aria-labelledby="hero-heading"
-                    style={{
-                        background: 'var(--alt-navy)',
-                        color: 'white',
-                        padding: 'clamp(4rem, 10vw, 8rem) clamp(1rem, 5vw, 3rem)',
-                        textAlign: 'center',
-                    }}
-                >
-                    <div style={{maxWidth: 760, margin: '0 auto'}}>
-                        <div className="alt-eyebrow" style={{color: 'rgba(255,255,255,0.5)', marginBottom: '1.5rem'}}>
+                <section className="lp-hero alt-topo" aria-labelledby="hero-heading">
+                    <div className="lp-hero-inner">
+                        <div className="alt-eyebrow lp-hero-eyebrow">
                             Colorado Residential Real Estate
                         </div>
-                        <h1
-                            id="hero-heading"
-                            className="alt-display"
-                            style={{
-                                fontSize: 'clamp(2.25rem, 6vw, 4rem)',
-                                lineHeight: 1.05,
-                                color: 'white',
-                                margin: '0 0 1.5rem',
-                            }}
-                        >
+                        <h1 id="hero-heading" className="lp-hero-h1">
                             Your contract-to-close concierge,{' '}
-                            <span style={{fontStyle: 'italic', color: 'var(--gold)'}}>on your phone.</span>
+                            <em className="lp-hero-em">on your phone.</em>
                         </h1>
-                        <p style={{
-                            fontSize: 'clamp(1rem, 2.5vw, 1.2rem)',
-                            color: 'rgba(255,255,255,0.72)',
-                            lineHeight: 1.65,
-                            margin: '0 auto 2.5rem',
-                            maxWidth: 580,
-                        }}>
+                        <p className="lp-hero-sub">
                             Altitude takes your CTME-exported contract PDF and turns it into a complete
                             mobile workspace: deadlines, tasks, contacts, documents, and closeout tracking —
                             reviewed and approved by you before anything becomes official.
                         </p>
-
-                        <div style={{display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap'}}>
-                            <Link
-                                href="/upload"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    padding: '13px 30px',
-                                    background: 'var(--alt-gold)',
-                                    color: 'var(--alt-navy)',
-                                    borderRadius: 999,
-                                    textDecoration: 'none',
-                                    fontWeight: 700,
-                                    fontSize: 15,
-                                    letterSpacing: '-0.01em',
-                                    minHeight: 48,
-                                    transition: 'background 0.15s',
-                                    boxShadow: '0 4px 20px rgba(214,168,79,.35)',
-                                }}
-                            >
-                                Upload a contract
+                        <div className="lp-hero-actions">
+                            <Link href="/login" className="lp-cta-primary">
+                                Get started free <IcArrowRight/>
                             </Link>
-                            <Link
-                                href="/dashboard"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    padding: '13px 28px',
-                                    background: 'transparent',
-                                    color: 'rgba(255,255,255,0.85)',
-                                    border: '1.5px solid rgba(255,255,255,0.2)',
-                                    borderRadius: 999,
-                                    textDecoration: 'none',
-                                    fontWeight: 500,
-                                    fontSize: 15,
-                                    minHeight: 48,
-                                    transition: 'border-color 0.15s, color 0.15s',
-                                }}
-                            >
-                                Open dashboard
+                            <Link href="/login" className="lp-cta-outline">
+                                Sign in
                             </Link>
                         </div>
-
-                        <p style={{
-                            marginTop: '1.75rem',
-                            fontSize: 12,
-                            color: 'rgba(255,255,255,0.35)',
-                            letterSpacing: '0.02em'
-                        }}>
+                        <p className="lp-hero-footnote">
                             CTME remains the official contract platform. Altitude is your operational workflow layer.
                         </p>
                     </div>
                 </section>
 
-                {/* ── How it works ───────────────────────────────────────────── */}
-                <section
-                    aria-labelledby="how-heading"
-                    style={{
-                        background: 'var(--alt-surface)',
-                        padding: 'clamp(3rem, 8vw, 6rem) clamp(1rem, 5vw, 3rem)',
-                    }}
-                >
-                    <div style={{maxWidth: 1080, margin: '0 auto'}}>
-                        <div style={{textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 4rem)'}}>
-                            <div className="alt-eyebrow" style={{marginBottom: '0.75rem'}}>The workflow</div>
-                            <h2
-                                id="how-heading"
-                                style={{
-                                    fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-                                    fontFamily: 'var(--f-display)',
-                                    fontWeight: 400,
-                                    margin: 0
-                                }}
-                            >
+                {/* ── How it works ────────────────────────────────── */}
+                <section className="lp-section lp-section--white" aria-labelledby="how-heading">
+                    <div className="lp-section-inner">
+                        <div className="lp-section-header">
+                            <div className="alt-eyebrow lp-section-eyebrow">The workflow</div>
+                            <h2 id="how-heading" className="lp-section-h2">
                                 From signed contract to closed deal
                             </h2>
                         </div>
-
-                        <ol
-                            style={{
-                                listStyle: 'none',
-                                padding: 0,
-                                margin: 0,
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                                gap: 'clamp(1rem, 3vw, 1.5rem)',
-                            }}
-                        >
-                            {[
-                                {
-                                    n: '01',
-                                    title: 'Export from CTME',
-                                    body: 'Generate your contract PDF in CTME as you normally would. Nothing changes in your contract workflow.',
-                                },
-                                {
-                                    n: '02',
-                                    title: 'Upload to Altitude',
-                                    body: 'Drag the PDF into Altitude on desktop or photograph it from your phone. Upload takes seconds.',
-                                },
-                                {
-                                    n: '03',
-                                    title: 'AI extracts the details',
-                                    body: 'Altitude reads deadlines, parties, amounts, dates, and N/A fields from the contract automatically.',
-                                },
-                                {
-                                    n: '04',
-                                    title: 'You review every field',
-                                    body: 'Every extracted value is presented for your approval. Edit or reject anything before it becomes part of your file.',
-                                },
-                                {
-                                    n: '05',
-                                    title: 'Your workspace is live',
-                                    body: 'Confirm and your transaction opens: timeline, task checklist, contact matrix, document tracker, and closeout log.',
-                                },
-                            ].map((step) => (
-                                <li
-                                    key={step.n}
-                                    className="landing-step-card"
-                                    style={{
-                                        background: 'var(--alt-bg)',
-                                        border: '1px solid var(--alt-border)',
-                                        borderRadius: 14,
-                                        padding: 'clamp(1rem, 2.5vw, 1.5rem)',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 10,
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 8,
-                                        }}
-                                    >
-                                        <span style={{
-                                            width: 26, height: 26, borderRadius: 999,
-                                            background: 'var(--alt-navy)',
-                                            color: 'var(--alt-gold)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: 11, fontWeight: 800, fontFamily: 'var(--f-mono)',
-                                            flexShrink: 0,
-                                        }}>{step.n}</span>
-                                    </div>
-                                    <div style={{fontSize: 15, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.3}}>
-                                        {step.title}
-                                    </div>
-                                    <div style={{fontSize: 13.5, color: 'var(--ink-3)', lineHeight: 1.6}}>
-                                        {step.body}
-                                    </div>
+                        <ol className="lp-steps-grid">
+                            {STEPS.map((step) => (
+                                <li key={step.n} className="lp-step">
+                                    <span className="lp-step-num" aria-hidden="true">{step.n}</span>
+                                    <div className="lp-step-title">{step.title}</div>
+                                    <div className="lp-step-body">{step.body}</div>
                                 </li>
                             ))}
                         </ol>
                     </div>
                 </section>
 
-                {/* ── Feature highlights ─────────────────────────────────────── */}
-                <section
-                    aria-labelledby="features-heading"
-                    style={{
-                        background: 'var(--alt-bg)',
-                        padding: 'clamp(3rem, 8vw, 6rem) clamp(1rem, 5vw, 3rem)',
-                        borderTop: '1px solid var(--alt-border)',
-                    }}
-                >
-                    <div style={{maxWidth: 1080, margin: '0 auto'}}>
-                        <div style={{textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 3.5rem)'}}>
-                            <div className="alt-eyebrow" style={{marginBottom: '0.75rem'}}>What you get</div>
-                            <h2
-                                id="features-heading"
-                                style={{
-                                    fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-                                    fontFamily: 'var(--f-display)',
-                                    fontWeight: 400,
-                                    margin: 0
-                                }}
-                            >
+                {/* ── Feature highlights ──────────────────────────── */}
+                <section className="lp-section lp-section--paper" aria-labelledby="features-heading">
+                    <div className="lp-section-inner">
+                        <div className="lp-section-header">
+                            <div className="alt-eyebrow lp-section-eyebrow">What you get</div>
+                            <h2 id="features-heading" className="lp-section-h2">
                                 Every transaction, fully tracked
                             </h2>
                         </div>
-
-                        <ul
-                            style={{
-                                listStyle: 'none',
-                                padding: 0,
-                                margin: 0,
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                                gap: 'clamp(1rem, 3vw, 1.25rem)',
-                            }}
-                        >
-                            {[
-                                {
-                                    label: 'Deadline timeline',
-                                    desc: 'Every CTME deadline extracted, dated, and tracked. Overdue items surface immediately. Today marker shows where you stand.',
-                                    accent: 'var(--alt-warning)',
-                                },
-                                {
-                                    label: 'Task checklist',
-                                    desc: 'Operational tasks generated from your contract. Complete them from your phone as you move through the deal.',
-                                    accent: 'var(--alt-navy-800)',
-                                },
-                                {
-                                    label: 'Contact matrix',
-                                    desc: 'Buyer, seller, lenders, title, inspectors — all parties and vendors in one tap-to-call contact screen.',
-                                    accent: 'var(--alt-navy-800)',
-                                },
-                                {
-                                    label: 'Document tracker',
-                                    desc: 'Required, conditional, and missing documents tracked against the Colorado transaction checklist.',
-                                    accent: 'var(--alt-gold)',
-                                },
-                                {
-                                    label: 'Source-backed review',
-                                    desc: 'AI extraction is a starting point. Every extracted field shows its source evidence — you approve before anything becomes part of the file.',
-                                    accent: 'var(--alt-info)',
-                                },
-                                {
-                                    label: 'Closeout tracking',
-                                    desc: 'Post-close tasks, thank-you follow-up, review requests, and referral tracking — nothing falls through after closing.',
-                                    accent: 'var(--alt-success)',
-                                },
-                            ].map((feat) => (
-                                <li
-                                    key={feat.label}
-                                    className="landing-feature-card"
-                                    style={{
-                                        background: 'var(--alt-surface)',
-                                        border: '1px solid var(--alt-border)',
-                                        borderLeft: `3px solid ${feat.accent}`,
-                                        borderRadius: 14,
-                                        padding: 'clamp(1rem, 2.5vw, 1.5rem)',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: 8,
-                                    }}
-                                >
-                                    <div style={{fontSize: 14, fontWeight: 600, color: 'var(--alt-navy)'}}>
-                                        {feat.label}
+                        <ul className="lp-features-grid">
+                            {FEATURES.map((feat) => (
+                                <li key={feat.label} className="lp-feature">
+                                    <div className="lp-feature-head">
+                                        <span className={`lp-feature-icon ${feat.iconClass}`}>
+                                            {feat.icon}
+                                        </span>
+                                        <span className="lp-feature-label">{feat.label}</span>
                                     </div>
-                                    <div style={{fontSize: 13.5, color: 'var(--alt-muted)', lineHeight: 1.65}}>
-                                        {feat.desc}
-                                    </div>
+                                    <p className="lp-feature-desc">{feat.desc}</p>
                                 </li>
                             ))}
                         </ul>
                     </div>
                 </section>
 
-                {/* ── Trust / positioning ────────────────────────────────────── */}
-                <section
-                    aria-labelledby="trust-heading"
-                    style={{
-                        background: 'var(--alt-surface)',
-                        padding: 'clamp(3rem, 8vw, 6rem) clamp(1rem, 5vw, 3rem)',
-                        borderTop: '1px solid var(--alt-border)',
-                    }}
-                >
-                    <div style={{maxWidth: 680, margin: '0 auto', textAlign: 'center'}}>
-                        <h2
-                            id="trust-heading"
-                            className="alt-display"
-                            style={{
-                                fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
-                                fontWeight: 400,
-                                margin: '0 0 1.25rem',
-                                lineHeight: 1.15
-                            }}
-                        >
+                {/* ── Trust / positioning ─────────────────────────── */}
+                <section className="lp-section lp-section--white" aria-labelledby="trust-heading">
+                    <div className="lp-section-inner--narrow">
+                        <h2 id="trust-heading" className="lp-trust-h2 alt-display">
                             Built for Colorado brokers who use CTME
                         </h2>
-                        <p style={{
-                            fontSize: 15,
-                            color: 'var(--ink-2)',
-                            lineHeight: 1.7,
-                            margin: '0 auto 2rem',
-                            maxWidth: 540
-                        }}>
+                        <p className="lp-trust-sub">
                             Altitude does not replace CTME. It reads from it. Your contracts stay in CTME
                             for legal execution and e-signature. Altitude turns the exported PDF into an
                             operational mobile workspace — the layer between contract execution and closed file.
                         </p>
-                        <div
-                            style={{
-                                display: 'flex',
-                                gap: 'clamp(0.75rem, 3vw, 2rem)',
-                                justifyContent: 'center',
-                                flexWrap: 'wrap',
-                                marginTop: '2rem',
-                            }}
-                        >
-                            {[
-                                {label: 'Source-backed extraction', sub: 'Every AI field is broker-reviewed'},
-                                {label: 'Mobile-first design', sub: 'Built for brokers in the field'},
-                                {label: 'Full audit trail', sub: 'Every action logged and timestamped'},
-                            ].map((stat) => (
-                                <div key={stat.label} style={{
-                                    textAlign: 'center', minWidth: 120,
-                                    padding: '1rem 1.25rem',
-                                    background: 'var(--alt-bg)',
-                                    border: '1px solid var(--alt-border)',
-                                    borderRadius: 12,
-                                }}>
-                                    <div style={{
-                                        fontSize: 13.5,
-                                        fontWeight: 700,
-                                        color: 'var(--alt-navy)'
-                                    }}>{stat.label}</div>
-                                    <div style={{fontSize: 12.5, color: 'var(--alt-muted)', marginTop: 5}}>{stat.sub}</div>
+                        <div className="lp-trust-grid">
+                            {TRUST_STATS.map((stat) => (
+                                <div key={stat.label} className="lp-trust-stat">
+                                    <div className="lp-trust-stat-label">{stat.label}</div>
+                                    <div className="lp-trust-stat-sub">{stat.sub}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
                 </section>
 
-                {/* ── Final CTA ──────────────────────────────────────────────── */}
-                <section
-                    aria-labelledby="cta-heading"
-                    className="alt-topo"
-                    style={{
-                        background: 'var(--alt-navy)',
-                        padding: 'clamp(3.5rem, 8vw, 6rem) clamp(1rem, 5vw, 3rem)',
-                        textAlign: 'center',
-                    }}
-                >
-                    <div style={{maxWidth: 560, margin: '0 auto'}}>
-                        <div className="alt-eyebrow" style={{color: 'rgba(255,255,255,0.4)', marginBottom: '1rem'}}>
-                            Ready to start
-                        </div>
-                        <h2
-                            id="cta-heading"
-                            className="alt-display"
-                            style={{
-                                fontSize: 'clamp(1.75rem, 5vw, 2.75rem)',
-                                color: 'white',
-                                fontWeight: 400,
-                                margin: '0 0 1.25rem',
-                                lineHeight: 1.1
-                            }}
-                        >
+                {/* ── Final CTA ───────────────────────────────────── */}
+                <section className="lp-cta-section lp-section--navy alt-topo" aria-labelledby="cta-heading">
+                    <div className="lp-cta-inner">
+                        <div className="alt-eyebrow lp-cta-eyebrow">Ready to start</div>
+                        <h2 id="cta-heading" className="lp-cta-h2 alt-display">
                             Your first transaction is three minutes away.
                         </h2>
-                        <p style={{
-                            fontSize: 15,
-                            color: 'rgba(255,255,255,0.6)',
-                            lineHeight: 1.65,
-                            margin: '0 auto 2.5rem',
-                            maxWidth: 420
-                        }}>
+                        <p className="lp-cta-sub">
                             Upload a CTME PDF. Review the extraction. Open your workspace.
                         </p>
-                        <div style={{display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap'}}>
-                            <Link
-                                href="/upload"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    padding: '14px 34px',
-                                    background: 'var(--alt-gold)',
-                                    color: 'var(--alt-navy)',
-                                    borderRadius: 999,
-                                    textDecoration: 'none',
-                                    fontWeight: 700,
-                                    fontSize: 15,
-                                    minHeight: 48,
-                                    letterSpacing: '-0.01em',
-                                    boxShadow: '0 4px 20px rgba(214,168,79,.3)',
-                                }}
-                            >
-                                Upload a contract
+                        <div className="lp-cta-actions">
+                            <Link href="/login" className="lp-cta-primary">
+                                Create your account
                             </Link>
-                            <Link
-                                href="/dashboard"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    padding: '14px 32px',
-                                    background: 'transparent',
-                                    color: 'rgba(255,255,255,0.8)',
-                                    border: '1.5px solid rgba(255,255,255,0.2)',
-                                    borderRadius: 999,
-                                    textDecoration: 'none',
-                                    fontWeight: 500,
-                                    fontSize: 15,
-                                    minHeight: 48,
-                                }}
-                            >
-                                Open dashboard
+                            <Link href="/login" className="lp-cta-outline">
+                                Sign in
                             </Link>
                         </div>
                     </div>
                 </section>
 
-                {/* ── Footer ─────────────────────────────────────────────────── */}
-                <footer
-                    role="contentinfo"
-                    style={{
-                        background: 'var(--alt-navy)',
-                        borderTop: '1px solid rgba(255,255,255,0.07)',
-                        padding: '2rem clamp(1rem, 5vw, 3rem)',
-                    }}
-                >
-                    <div style={{
-                        maxWidth: 1080,
-                        margin: '0 auto',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: 16,
-                    }}>
-                        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                            <div style={{
-                                width: 26,
-                                height: 26,
-                                borderRadius: 7,
-                                background: 'linear-gradient(150deg,#E7CB7E 0%,#C9A14A 45%,#9C7726 78%,#D8B968 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                <svg width="15" height="11" viewBox="0 0 18 13" fill="none" aria-hidden="true">
-                                    <path d="M9 1L14 10H4L9 1Z" fill="white" opacity="0.95"/>
-                                    <path d="M13.5 4L17.5 10H9.5L13.5 4Z" fill="white" opacity="0.5"/>
-                                </svg>
-                            </div>
-                            <span style={{color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: 500}}>
-                Altitude Transactions
-              </span>
+                {/* ── Footer ──────────────────────────────────────── */}
+                <footer className="lp-footer" role="contentinfo">
+                    <div className="lp-footer-inner">
+                        <div className="lp-footer-brand">
+                            <span className="lp-footer-mark">{BRAND_MARK_SM}</span>
+                            <span className="lp-footer-name">Altitude Transactions</span>
                         </div>
-                        <nav aria-label="Footer navigation" style={{display: 'flex', gap: 20}}>
-                            {[
-                                {label: 'Dashboard', href: '/dashboard'},
-                                {label: 'Upload', href: '/upload'},
-                            ].map((link) => (
-                                <Link
-                                    key={link.href}
-                                    href={link.href}
-                                    style={{color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontSize: 13}}
-                                >
-                                    {link.label}
-                                </Link>
-                            ))}
+                        <nav aria-label="Footer navigation">
+                            <ul className="lp-footer-nav">
+                                <li><Link href="/login">Sign in</Link></li>
+                                <li><Link href="/login">Get started</Link></li>
+                            </ul>
                         </nav>
                     </div>
                 </footer>

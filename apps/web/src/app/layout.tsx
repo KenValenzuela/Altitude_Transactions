@@ -1,5 +1,32 @@
-import type { Metadata } from 'next';
+import type {Metadata} from 'next';
+import {Hanken_Grotesk, IBM_Plex_Mono, Spectral} from 'next/font/google';
 import './globals.css';
+
+/* Self-hosted via next/font — WOFF2, preloaded, no external DNS, font-display:swap */
+const spectral = Spectral({
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700'],
+    style: ['normal', 'italic'],
+    variable: '--font-spectral',
+    display: 'swap',
+    preload: true,
+});
+
+const hanken = Hanken_Grotesk({
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700'],
+    variable: '--font-hanken',
+    display: 'swap',
+    preload: true,
+});
+
+const ibmPlex = IBM_Plex_Mono({
+    subsets: ['latin'],
+    weight: ['400', '500', '600'],
+    variable: '--font-ibmplex',
+    display: 'swap',
+    preload: false,
+});
 
 export const metadata: Metadata = {
   title: 'Altitude — Broker Portal',
@@ -8,14 +35,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+      <html lang="en" className={`${spectral.variable} ${hanken.variable} ${ibmPlex.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
+          <meta name="viewport" content="width=device-width, initial-scale=1"/>
       </head>
       <body>{children}</body>
     </html>

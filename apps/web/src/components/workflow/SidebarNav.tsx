@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { getStoredUser } from '@/lib/api-client';
+import {usePathname} from 'next/navigation';
+import {getStoredUser} from '@/lib/api-client';
 
 /* ── Inline SVG icons (1.75px stroke, Lucide-style) ── */
 function IcDashboard() {
@@ -98,31 +98,41 @@ export function SidebarNav() {
 
       <div className="dk-railsec">Workspace</div>
 
-      <nav className="dk-nav">
-        {navItems.map(({ href, label, Icon }) => {
-          const active = isActive(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`dk-navitem${active ? ' on' : ''}`}
-            >
-              <span className="dk-navico" style={{ color: active ? 'var(--brass-400)' : 'var(--fg3-on-navy)' }}>
-                <Icon />
-              </span>
-              {label}
-            </Link>
-          );
-        })}
+        <nav aria-label="Main navigation">
+            <ul className="dk-nav-list">
+                {navItems.map(({href, label, Icon}) => {
+                    const active = isActive(href);
+                    return (
+                        <li key={href}>
+                            <Link
+                                href={href}
+                                className={`dk-navitem${active ? ' on' : ''}`}
+                                aria-current={active ? 'page' : undefined}
+                            >
+                  <span className="dk-navico" style={{color: active ? 'var(--brass-400)' : 'var(--fg3-on-navy)'}}>
+                    <Icon/>
+                  </span>
+                                {label}
+                            </Link>
+                        </li>
+                    );
+                })}
+            </ul>
       </nav>
 
       <div className="dk-railsec" style={{ marginTop: 8 }}>Quick action</div>
-      <Link href="/upload" className={`dk-navitem${isActive('/upload') ? ' on' : ''}`}>
-        <span className="dk-navico" style={{ color: isActive('/upload') ? 'var(--brass-400)' : 'var(--fg3-on-navy)' }}>
-          <IcUpload />
-        </span>
-        Upload contract
-      </Link>
+        <ul className="dk-nav-list">
+            <li>
+                <Link href="/upload" className={`dk-navitem${isActive('/upload') ? ' on' : ''}`}
+                      aria-current={isActive('/upload') ? 'page' : undefined}>
+            <span className="dk-navico"
+                  style={{color: isActive('/upload') ? 'var(--brass-400)' : 'var(--fg3-on-navy)'}}>
+              <IcUpload/>
+            </span>
+                    Upload contract
+                </Link>
+            </li>
+        </ul>
 
       <div className="dk-railfoot">
         <div className="dk-avatar">{initials}</div>

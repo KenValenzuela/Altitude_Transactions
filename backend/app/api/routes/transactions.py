@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlmodel import Session, select
 
 from app.api.deps import get_current_user, get_session
-from app.models import AuditEvent, Contact, Deadline, DocumentRequirement, ExtractedField, ReviewStatus, PopulationStatus, Task, TaskStatus, User
+from app.models import AuditEvent, Contact, Deadline, DocumentRequirement, ExtractedField, Task, User
 from app.schemas import *  # noqa: F403
 from app.services import transaction_service
-from app.services.transaction_service import _deadline_out, _task_out, _contact_out, _doc_out
+from app.services.transaction_service import _deadline_out, _task_out, _contact_out, _doc_out, delete_transaction
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -38,6 +38,14 @@ def contacts(transaction_id: str, session: Session = Depends(get_session)):
 @router.get("/{transaction_id}/documents", response_model=list[DocumentRequirementOut])
 def docs(transaction_id: str, session: Session = Depends(get_session)):
     return [_doc_out(d) for d in session.exec(select(DocumentRequirement).where(DocumentRequirement.transaction_id == transaction_id)).all()]
+
+
+@router.delete("/{transaction_id}", status_code=204)
+def delete_transaction_route(transaction_id: str, user: User = Depends(get_current_user),
+                             session: Session = Depends(get_session)):
+    tx = transaction_service.get_transaction(session, transaction_id)
+    if tx is None or tx.owner_id != user.id: raise HTTPException(status_code=404, detail="Transaction not found")
+    delete_transaction(session, tx)
 
 @router.post("/{transaction_id}/documents", response_model=DocumentRequirementOut)
 def upload_supporting(transaction_id: str, file: UploadFile = File(...), session: Session = Depends(get_session)):

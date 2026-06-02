@@ -4,7 +4,8 @@ from datetime import date
 
 from sqlmodel import Session, select
 
-from app.models import Contact, Deadline, DocumentRequirement, ExtractionRun, ExtractedField, PostCloseTask, SourceDocument, Task, TaskStatus, Transaction, AuditEvent
+from app.models import Contact, Deadline, DocumentRequirement, ExtractionRun, ExtractedField, PostCloseTask, \
+    SourceDocument, Task, TaskStatus, Transaction, AuditEvent
 from app.schemas import *  # noqa: F403
 from app.services.fixture_provider import materialize_extraction
 
@@ -123,6 +124,22 @@ def to_detail(session: Session, tx: Transaction) -> TransactionDetail:
 
 def get_transaction(session: Session, transaction_id: str) -> Transaction | None:
     return session.get(Transaction, transaction_id)
+
+
+def delete_transaction(session: Session, tx: Transaction) -> None:
+    from sqlmodel import delete as sql_delete
+    tid = tx.id
+    session.exec(sql_delete(PostCloseTask).where(PostCloseTask.transaction_id == tid))
+    session.exec(sql_delete(AuditEvent).where(AuditEvent.transaction_id == tid))
+    session.exec(sql_delete(DocumentRequirement).where(DocumentRequirement.transaction_id == tid))
+    session.exec(sql_delete(Contact).where(Contact.transaction_id == tid))
+    session.exec(sql_delete(Task).where(Task.transaction_id == tid))
+    session.exec(sql_delete(Deadline).where(Deadline.transaction_id == tid))
+    session.exec(sql_delete(ExtractedField).where(ExtractedField.transaction_id == tid))
+    session.exec(sql_delete(ExtractionRun).where(ExtractionRun.transaction_id == tid))
+    session.exec(sql_delete(SourceDocument).where(SourceDocument.transaction_id == tid))
+    session.delete(tx)
+    session.commit()
 
 
 def build_from_extraction(session: Session, owner_id: str, run: ExtractionRun, doc: SourceDocument) -> Transaction:

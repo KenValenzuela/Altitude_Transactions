@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { TransactionCard as CardType } from '@/types/domain';
+import type {TransactionCard as CardType} from '@/types/domain';
 
 function HouseThumb() {
   return (
@@ -78,14 +78,9 @@ export function TransactionCard({ transaction: t }: { transaction: CardType }) {
     >
       <article
         className="dk-card"
-        style={{ transition: 'transform .18s, box-shadow .18s, border-color .18s', cursor: 'pointer' }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-          (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)';
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLElement).style.transform = '';
-          (e.currentTarget as HTMLElement).style.boxShadow = '';
+        style={{
+            transition: 'transform var(--t-base), box-shadow var(--t-base), border-color var(--t-base)',
+            cursor: 'pointer'
         }}
       >
         {/* Top edge color accent */}

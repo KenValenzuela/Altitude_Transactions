@@ -491,4 +491,4 @@ def seed_fixture_transaction(session: Session, user: User) -> Transaction:
     existing = session.exec(select(Transaction)).first()
     if existing: return existing
     doc, run = create_source_document(session, user, "CBS - CONTRACT TO BUY AND SELL REAL ESTATE (RESIDENTIAL) EXAMPLE.pdf", "application/pdf", b"%PDF-1.4\n%%EOF\n")
-    return materialize_extraction(session, run, doc, user.id)
+    return session.get(Transaction, run.transaction_id)

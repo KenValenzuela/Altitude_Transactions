@@ -1,18 +1,19 @@
-import { API_BASE_URL } from './config';
+import {API_BASE_URL} from './config';
 import type {
-  ApiDocument,
-  ApiDocumentState,
-  ApiErrorBody,
-  ApiTask,
-  ApiUser,
-  ConfirmExtractionRequest,
-  ExtractedField,
-  ExtractionJob,
-  SessionResponse,
-  TaskState,
-  Transaction,
-  TransactionCard,
-  UploadResponse,
+    ApiDocument,
+    ApiDocumentState,
+    ApiErrorBody,
+    ApiTask,
+    ApiUser,
+    ConfirmExtractionRequest,
+    Contact,
+    ExtractedField,
+    ExtractionJob,
+    SessionResponse,
+    TaskState,
+    Transaction,
+    TransactionCard,
+    UploadResponse,
 } from '@/types/api';
 
 export class ApiError extends Error {
@@ -129,4 +130,27 @@ export const api = {
     request<ApiTask>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ state }) }),
   updateDocument: (id: string, state: ApiDocumentState) =>
     request<ApiDocument>(`/documents/${id}`, { method: 'PATCH', body: JSON.stringify({ state }) }),
+    deleteTransaction: (id: string) =>
+        request<void>(`/transactions/${id}`, {method: 'DELETE'}),
+
+    updateContact: (
+        id: string,
+        data: Partial<Pick<Contact, 'name' | 'company' | 'email' | 'phone' | 'notes'>>,
+    ) => request<Contact>(`/contacts/${id}`, {method: 'PATCH', body: JSON.stringify(data)}),
+
+    getDocumentBlob: async (id: string): Promise<Blob> => {
+        const token = getToken();
+        const headers = new Headers();
+        if (token) headers.set('Authorization', `Bearer ${token}`);
+        let response: Response;
+        try {
+            response = await fetch(`${API_BASE_URL}/documents/${id}/download`, {headers});
+        } catch {
+            throw new ApiError(0, 'Could not reach the Altitude API. Start the FastAPI backend on port 8000.');
+        }
+        if (!response.ok) {
+            throw new ApiError(response.status, 'Unable to load document content.');
+        }
+        return response.blob();
+    },
 };

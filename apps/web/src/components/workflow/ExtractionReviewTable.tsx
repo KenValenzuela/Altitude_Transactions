@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import type { ExtractedField } from '@/types/domain';
-import { FieldReviewCard } from './FieldReviewCard';
-import { isCurrentlyBlocking } from './FieldStatusBadge';
+import {useState} from 'react';
+import type {ExtractedField} from '@/types/domain';
+import {FieldReviewCard} from './FieldReviewCard';
+import {isCurrentlyBlocking} from './FieldStatusBadge';
 
 interface TriageSectionProps {
   title: string;
@@ -28,13 +28,10 @@ function TriageSection({
 
   return (
     <div className="triage-section">
-      <div
-        className="triage-section__header"
+        <button
+            className="triage-section__header-btn"
         onClick={() => setOpen((v) => !v)}
-        role="button"
-        tabIndex={0}
         aria-expanded={open}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
         aria-label={`${title} section, ${fields.length} fields`}
       >
         <span className="triage-section__title">{title}</span>
@@ -47,7 +44,7 @@ function TriageSection({
         >
           <path d="M6 9l6 6 6-6"/>
         </svg>
-      </div>
+        </button>
 
       {open && (
         <div className="triage-section__cards">
