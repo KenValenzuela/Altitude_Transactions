@@ -1,75 +1,20 @@
 import Link from 'next/link';
-import {AdminControlsSection} from '@/components/landing/AdminControlsSection';
-import {DeadlineIntelligenceSection} from '@/components/landing/DeadlineIntelligenceSection';
-import {DocumentChecklistPreview} from '@/components/landing/DocumentChecklistPreview';
-import {LandingHero} from '@/components/landing/LandingHero';
-import {PhaseTwoAutomationSection} from '@/components/landing/PhaseTwoAutomationSection';
-import {ProblemSection} from '@/components/landing/ProblemSection';
-import {UploadReviewApprovePreview} from '@/components/landing/UploadReviewApprovePreview';
-import {WorkflowSteps} from '@/components/landing/WorkflowSteps';
+
+const sections = [
+  { eyebrow: 'Problem / Stakes', title: 'Missed deadlines and scattered documents create transaction risk.', body: 'Contract dates, disclosures, title items, inspection documents, contacts, and vendor work often live in separate inboxes and folders. Altitude makes the next required action visible.' },
+  { eyebrow: 'How It Works', title: 'Upload, review, approve, track.', body: 'Upload a contract or transaction document, review AI-assisted extracted data, approve changes, and keep the property file synchronized with deadlines, contacts, tasks, documents, and audit history.' },
+  { eyebrow: 'Transaction Command Center', title: 'Every property gets its own organized transaction file.', body: 'Open a property workspace with overview, documents, review queue, deadlines, tasks, contacts, vendors, financial, amendments, audit log, and post-close preservation.' },
+  { eyebrow: 'AI-Assisted, Human-Approved', title: 'Automation supports Brett; it does not replace Brett.', body: 'AI can extract contract dates, deadlines, parties, and amendment changes, but nothing becomes authoritative until Brett/admin reviews and approves it.' },
+  { eyebrow: 'Features', title: 'Documents, deadlines, contacts, vendors, amendments, and audit.', body: 'Checklist rows show what is missing, submitted, needs review, approved, rejected, needs revision, or not applicable. Deadline records preserve original date, current date, amendment source, and audit trail.' },
+  { eyebrow: 'Service Tiers', title: 'Premium coordination options for different transaction volumes.', body: 'Phase 1 can present optional tiers for contract intake, active contract-to-close coordination, and broker/admin oversight once Brett confirms pricing and inclusions.' },
+  { eyebrow: 'CTA', title: 'Create a calmer contract-to-close process.', body: 'Request access, book a consult, or open the responsive demo workspace to see how Altitude handles today’s urgent work.' },
+];
 
 export const metadata = {
-  title: 'Altitude Transactions — Colorado Contract-to-Close Infrastructure',
-  description:
-    'AI-enhanced transaction management for Colorado real estate professionals: upload documents, review extraction, approve updates, and keep deadlines, contacts, and checklists source-backed.',
+  title: 'Altitude Transactions — Colorado Contract-to-Close Coordination',
+  description: 'Premium real estate transaction management for Colorado residential contract-to-close coordination.',
 };
 
-const BRAND_MARK_SVG = (
-  <svg width="20" height="16" viewBox="0 0 22 17" fill="none" aria-hidden="true">
-    <path d="M11 1L17.5 12.5H4.5L11 1Z" fill="white" opacity="0.95" />
-    <path d="M16 4.5L21.5 12.5H10.5L16 4.5Z" fill="white" opacity="0.5" />
-    <path d="M5.5 6.5L10 12.5H1L5.5 6.5Z" fill="white" opacity="0.35" />
-  </svg>
-);
-
-const BRAND_MARK_SM = (
-  <svg width="15" height="11" viewBox="0 0 18 13" fill="none" aria-hidden="true">
-    <path d="M9 1L14 10H4L9 1Z" fill="white" opacity="0.95" />
-    <path d="M13.5 4L17.5 10H9.5L13.5 4Z" fill="white" opacity="0.5" />
-  </svg>
-);
-
 export default function LandingPage() {
-  return (
-    <div className="lp-page">
-      <nav className="lp-nav" aria-label="Primary navigation">
-        <div className="lp-nav-inner">
-          <Link href="/" className="lp-brand" aria-label="Altitude Transactions home">
-            <span className="lp-brand-mark">{BRAND_MARK_SVG}</span>
-            <span className="lp-brand-name">Altitude Transactions</span>
-          </Link>
-          <div className="lp-nav-actions">
-            <Link href="/login" className="lp-nav-signin">Sign in</Link>
-            <Link href="/upload" className="lp-nav-cta">Start a Transaction</Link>
-          </div>
-        </div>
-      </nav>
-
-      <main>
-        <LandingHero />
-        <ProblemSection />
-        <WorkflowSteps />
-        <DocumentChecklistPreview />
-        <UploadReviewApprovePreview />
-        <DeadlineIntelligenceSection />
-        <AdminControlsSection />
-        <PhaseTwoAutomationSection />
-      </main>
-
-      <footer className="lp-footer" role="contentinfo">
-        <div className="lp-footer-inner">
-          <div className="lp-footer-brand">
-            <span className="lp-footer-mark">{BRAND_MARK_SM}</span>
-            <span className="lp-footer-name">Altitude Transactions</span>
-          </div>
-          <nav aria-label="Footer navigation">
-            <ul className="lp-footer-nav">
-              <li><Link href="/login">Sign in</Link></li>
-              <li><Link href="/upload">Start a Transaction</Link></li>
-            </ul>
-          </nav>
-        </div>
-      </footer>
-    </div>
-  );
+  return <div className="at-landing"><nav className="at-landing-nav"><Link href="/" className="at-brand"><span>△</span><strong>Altitude Transactions</strong></Link><div><Link href="/login">Sign in</Link><Link className="at-btn at-btn-primary" href="/get-started">Get started</Link></div></nav><main><section className="at-hero"><p className="at-kicker">Hero · Colorado residential real estate</p><h1>Contract-to-close transaction control for premium Colorado broker operations.</h1><p>Altitude Transactions gives Brett a property-based command center for documents, deadlines, contacts, vendors, tasks, amendments, review decisions, and audit history.</p><div className="at-top-actions"><Link className="at-btn at-btn-primary" href="/get-started">Request access</Link><Link className="at-btn at-btn-ghost" href="/app/today">View demo workspace</Link></div></section>{sections.map((section) => <section className="at-landing-section" key={section.eyebrow}><p className="at-kicker">{section.eyebrow}</p><h2>{section.title}</h2><p>{section.body}</p></section>)}</main></div>;
 }

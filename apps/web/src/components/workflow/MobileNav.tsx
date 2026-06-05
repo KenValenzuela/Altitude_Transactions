@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-function IcDashboard() {
+function IcToday() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>;
 }
 function IcFolderOpen() {
@@ -19,8 +19,8 @@ function IcScrollText() {
 }
 
 const items = [
-  { id: 'today',        href: '/dashboard',    label: 'Today',    Icon: IcDashboard,  center: false },
-  { id: 'deals',        href: '/transactions', label: 'Deals',    Icon: IcFolderOpen, center: false },
+  { id: 'today',        href: '/app/today',    label: 'Today',    Icon: IcToday,  center: false },
+  { id: 'transactions',        href: '/app/transactions', label: 'Active Transactions',    Icon: IcFolderOpen, center: false },
   { id: 'upload',       href: '/upload',       label: '',         Icon: IcPlus,       center: true  },
   { id: 'contacts',     href: '/contacts',     label: 'Contacts', Icon: IcUsers,      center: false },
   { id: 'activity',     href: '/audit',        label: 'Activity', Icon: IcScrollText, center: false },
@@ -32,7 +32,7 @@ export function MobileNav() {
   return (
     <nav className="ak-bottomnav" aria-label="Primary navigation">
       {items.map(({ id, href, label, Icon, center }) => {
-        const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'));
+        const active = pathname === href || (href !== '/app/today' && pathname.startsWith(href + '/'));
         if (center) {
           return (
             <Link key={id} href={href} className="ak-navadd" aria-label="Upload contract">

@@ -3,7 +3,7 @@ import type {TransactionCard as CardType} from '@/types/domain';
 
 function HouseThumb() {
   return (
-    <div className="dk-deal-thumb">
+    <div className="dk-transaction-thumb">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brass-400)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
         <path d="M9 21V12h6v9"/>
@@ -73,7 +73,7 @@ export function TransactionCard({ transaction: t }: { transaction: CardType }) {
 
   return (
     <Link
-      href={`/transactions/${t.id}`}
+      href={`/app/transactions/${t.id}`}
       style={{ textDecoration: 'none', display: 'block' }}
     >
       <article
@@ -86,13 +86,13 @@ export function TransactionCard({ transaction: t }: { transaction: CardType }) {
         {/* Top edge color accent */}
         <div style={{ height: 3, background: tone === 'ok' ? 'var(--brass-500)' : tone === 'warn' ? 'var(--warn)' : tone === 'risk' ? 'var(--risk)' : 'var(--paper-300)' }} />
 
-        <div className="dk-deal" style={{ gridTemplateColumns: '44px 1fr auto', padding: '14px 16px' }}>
+        <div className="dk-transaction" style={{ gridTemplateColumns: '44px 1fr auto', padding: '14px 16px' }}>
           <HouseThumb />
 
           <div style={{ minWidth: 0 }}>
-            <div className="dk-deal-addr">{t.address}</div>
-            <div className="dk-deal-sub">{t.city} · {t.stage} · ${t.price.toLocaleString()}</div>
-            <div className="dk-deal-id">{t.id}</div>
+            <div className="dk-transaction-addr">{t.address}</div>
+            <div className="dk-transaction-sub">{t.city} · {t.stage} · ${t.price.toLocaleString()}</div>
+            <div className="dk-transaction-id">{t.id}</div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>

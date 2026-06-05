@@ -4,7 +4,7 @@ import {usePathname} from 'next/navigation';
 import {getStoredUser} from '@/lib/api-client';
 
 /* ── Inline SVG icons (1.75px stroke, Lucide-style) ── */
-function IcDashboard() {
+function IcToday() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -64,8 +64,8 @@ function IcUpload() {
 
 
 const navItems = [
-  { href: '/dashboard',    label: 'Today',     Icon: IcDashboard  },
-  { href: '/transactions', label: 'Deals',     Icon: IcFolderOpen },
+  { href: '/app/today',    label: 'Today',     Icon: IcToday  },
+  { href: '/app/transactions', label: 'Active Transactions',     Icon: IcFolderOpen },
   { href: '/deadlines',    label: 'Deadlines', Icon: IcCalendar   },
   { href: '/contacts',     label: 'Contacts',  Icon: IcUsers      },
   { href: '/documents',    label: 'Documents', Icon: IcFolder     },
@@ -81,11 +81,11 @@ export function SidebarNav() {
   const brokerage = user?.brokerage ?? 'Colorado Real Estate';
 
   const isActive = (href: string) =>
-    pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'));
+    pathname === href || (href !== '/app/today' && pathname.startsWith(href + '/'));
 
   return (
     <aside className="sidebar dk-rail" aria-label="Primary navigation">
-      <Link href="/dashboard" aria-label="Altitude — return to dashboard" style={{ textDecoration: 'none' }}>
+      <Link href="/app/today" aria-label="Altitude — return to dashboard" style={{ textDecoration: 'none' }}>
         <div className="dk-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/altitude-mark.png" alt="" width={30} height={30} style={{ flexShrink: 0 }} />
