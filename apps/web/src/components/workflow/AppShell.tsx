@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="dk-topbar">
             <div className="dk-search" role="search">
             <IcSearch />
-            <input placeholder="Search deals, contacts, documents…" aria-label="Search" />
+            <input placeholder="Search transactions, contacts, documents…" aria-label="Search" />
           </div>
           <div className="dk-topact">
             <button className="dk-iconbtn" aria-label="Notifications">
@@ -75,8 +75,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </p>
                 <nav aria-label="Footer links">
                     <ul className="dk-footer-nav">
-                        <li><Link href="/dashboard">Dashboard</Link></li>
-                        <li><Link href="/transactions">Deals</Link></li>
+                        <li><Link href="/app/today">Today</Link></li>
+                        <li><Link href="/app/transactions">Active Transactions</Link></li>
                         <li><Link href="/upload">Upload</Link></li>
                     </ul>
                 </nav>
