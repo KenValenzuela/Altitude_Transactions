@@ -3907,3 +3907,127 @@ a:hover .dk-card, .dk-card--hoverable:hover {
 /* ── Tailwind CSS utilities ─────────────────────────────────── */
 @tailwind components;
 @tailwind utilities;
+
+/* ── 41. CONTRACT-TO-CLOSE LANDING OVERHAUL ─────────────────── */
+.lp-page { background: var(--bg-app); color: var(--fg1); }
+.lp-hero { text-align: left; background: radial-gradient(circle at 80% 10%, rgba(189,164,117,.18), transparent 32%), var(--bg-navy); }
+.lp-hero-grid { max-width: 1180px; display: grid; grid-template-columns: minmax(0, .95fr) minmax(320px, 1fr); gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+.lp-hero-copy { min-width: 0; }
+.lp-hero-h1 { max-width: 760px; }
+.lp-hero-sub { margin-left: 0; max-width: 680px; }
+.lp-hero-actions { justify-content: flex-start; }
+.lp-product-card, .lp-checklist-card, .lp-state-card, .lp-provenance-card, .lp-permissions-card {
+  background: rgba(255,255,255,.98); border: 1px solid rgba(222,209,186,.9); border-radius: 24px; box-shadow: var(--shadow-lg); padding: clamp(1rem, 2.5vw, 1.35rem); color: var(--fg1);
+}
+.lp-product-card { background: linear-gradient(180deg, #fff, var(--paper-50)); }
+.lp-product-topline, .lp-card-title-row { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 18px; }
+.lp-product-kicker { margin: 0 0 4px; color: var(--fg-brass); font: 700 11px/1 var(--font-sans); letter-spacing: .14em; text-transform: uppercase; }
+.lp-product-topline h3, .lp-card-title-row h3, .lp-state-card h3, .lp-inline-cta h3 { margin: 0; font: 600 24px/1.1 var(--font-serif); color: var(--fg1); }
+.lp-product-status { border: 1px solid var(--ok-line); background: var(--ok-surface); color: var(--ok-text); border-radius: 999px; padding: 5px 10px; font: 700 12px var(--font-sans); }
+.lp-product-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.lp-product-metrics div { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: white; }
+.lp-product-metrics strong { display: block; font: 600 26px/1 var(--font-serif); color: var(--ink-900); }
+.lp-product-metrics span, .lp-product-row span, .lp-file-rail span, .lp-provenance-row em, .lp-contact-lines span, .lp-permission-grid span, .lp-phase-grid span { display: block; color: var(--fg3); font: 500 12.5px/1.45 var(--font-sans); }
+.lp-product-workspace { display: grid; grid-template-columns: 150px 1fr; gap: 12px; }
+.lp-file-rail { background: var(--ink-900); color: white; border-radius: 16px; padding: 12px; }
+.lp-file-rail p { margin: 0 0 10px; color: var(--brass-300); font: 700 11px var(--font-sans); text-transform: uppercase; letter-spacing: .1em; }
+.lp-file-rail span { color: rgba(255,255,255,.75); padding: 8px 0; border-top: 1px solid rgba(255,255,255,.08); }
+.lp-product-main { display: grid; gap: 8px; }
+.lp-product-row, .lp-checklist-row, .lp-state-row, .lp-provenance-row, .lp-contact-lines div, .lp-permission-grid div, .lp-phase-grid div { border: 1px solid var(--line); background: white; border-radius: 14px; padding: 12px; }
+.lp-product-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.lp-product-row strong, .lp-checklist-row strong, .lp-provenance-row strong, .lp-contact-lines strong, .lp-permission-grid strong, .lp-phase-grid strong { display: block; font: 700 13px/1.25 var(--font-sans); color: var(--fg1); }
+.lp-product-row em, .lp-checklist-row em { color: var(--fg-brass); font: 700 11px var(--font-sans); text-transform: capitalize; white-space: nowrap; }
+.lp-deadline-strip { margin-top: 12px; border-radius: 16px; background: var(--brass-100); border: 1px solid var(--brass-300); padding: 12px; display: flex; justify-content: space-between; gap: 12px; font-family: var(--font-sans); }
+.lp-deadline-strip span { color: var(--brass-700); }
+.lp-problem-grid, .lp-phase-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.lp-problem-card { background: white; border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: var(--shadow-sm); }
+.lp-problem-card h3 { margin: 0 0 8px; font: 700 16px var(--font-sans); }
+.lp-problem-card p, .lp-section-copy, .lp-rule-list { color: var(--fg2); font: 500 15px/1.7 var(--font-sans); }
+.lp-split { display: grid; grid-template-columns: minmax(0, .85fr) minmax(320px, 1.15fr); gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+.lp-split--reverse { grid-template-columns: minmax(320px, 1.05fr) minmax(0, .95fr); }
+.lp-workflow-rail { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.lp-workflow-step { position: relative; background: var(--paper-50); border: 1px solid var(--line); border-radius: 18px; padding: 18px; min-height: 160px; }
+.lp-workflow-step span { width: 34px; height: 34px; border-radius: 999px; background: var(--ink-900); color: var(--brass-300); display: inline-flex; align-items: center; justify-content: center; font: 800 12px var(--font-mono); margin-bottom: 18px; }
+.lp-workflow-step p { margin: 0; color: var(--fg1); font: 700 14px/1.45 var(--font-sans); }
+.lp-checklist-table { display: grid; gap: 8px; max-height: 520px; overflow: auto; padding-right: 3px; }
+.lp-checklist-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; }
+.lp-needed-toggle, .dk-needed-toggle { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 999px; padding: 3px; background: var(--paper-100); gap: 2px; }
+.lp-needed-toggle span, .dk-needed-toggle button { border: 0; border-radius: 999px; padding: 5px 9px; font: 700 11px var(--font-sans); color: var(--fg3); background: transparent; }
+.lp-needed-toggle .on, .dk-needed-toggle .on { background: white; color: var(--fg1); box-shadow: var(--shadow-xs); }
+.lp-needed-toggle .muted { color: var(--neutral); }
+.lp-mini-admin, .lp-admin-actions button, .lp-contact-lines button { border: 1px solid var(--line-strong); background: white; border-radius: 999px; padding: 8px 12px; font: 700 12px var(--font-sans); color: var(--fg-brass); }
+.lp-state-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.lp-state-pills span { background: var(--paper-100); border: 1px solid var(--line); color: var(--fg1); border-radius: 999px; padding: 8px 12px; font: 700 12px var(--font-sans); }
+.lp-state-card { display: grid; gap: 10px; }
+.lp-state-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; border-left: 4px solid var(--warn); }
+.lp-state-row button { border: 0; border-radius: 999px; background: var(--ink-900); color: white; padding: 8px 12px; font: 700 12px var(--font-sans); }
+.lp-state-row strong { color: var(--ok-text); font: 800 12px var(--font-sans); }
+.lp-state-row--uploaded { border-left-color: var(--info); }
+.lp-state-row--reviewed { border-left-color: var(--brass-500); }
+.lp-state-row--approved { border-left-color: var(--ok); }
+.lp-state-row--na { border-left-color: var(--neutral); opacity: .72; }
+.lp-needed-control-note { color: var(--fg2); font: 600 13px var(--font-sans); padding: 8px; }
+.lp-on-dark { color: var(--brass-300); }
+.lp-copy-on-dark { color: rgba(243,236,222,.76); }
+.lp-provenance-card { background: rgba(255,255,255,.07); border-color: var(--line-on-navy); box-shadow: var(--shadow-navy); color: white; }
+.lp-amend-stack { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+.lp-amend-stack div { border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); border-radius: 14px; padding: 13px; }
+.lp-amend-stack strong { color: white; display: block; font: 800 13px var(--font-sans); }
+.lp-amend-stack span { color: rgba(255,255,255,.62); font: 500 12px/1.5 var(--font-sans); }
+.lp-provenance-table { display: grid; gap: 10px; }
+.lp-provenance-row { background: rgba(255,255,255,.96); }
+.lp-provenance-row span { color: var(--fg1); font: 700 13px var(--font-mono); }
+.lp-admin-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.lp-permission-grid, .lp-contact-lines { display: grid; gap: 10px; }
+.lp-contact-lines { margin-top: 12px; }
+.lp-phase-grid { grid-template-columns: repeat(3, 1fr); margin-bottom: 24px; }
+.lp-phase-grid div { background: rgba(255,255,255,.07); border-color: var(--line-on-navy); }
+.lp-phase-grid strong { color: white; }
+.lp-phase-grid span { color: rgba(255,255,255,.62); }
+.lp-centered-copy { max-width: 740px; margin-left: auto; margin-right: auto; }
+.lp-inline-cta { border: 1px solid var(--line-on-navy); border-radius: 24px; padding: clamp(1rem, 3vw, 1.5rem); background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.lp-inline-cta .alt-eyebrow { color: var(--brass-300); margin-bottom: 6px; }
+.lp-inline-cta h3 { color: white; }
+.lp-inline-cta-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.lp-cta-outline--paper { border-color: rgba(255,255,255,.28); }
+
+/* ── 42. DOCUMENT WORKFLOW CHECKLIST ───────────────────────── */
+.dk-docflow { display: grid; gap: 22px; }
+.dk-docflow-toolbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow-sm); }
+.dk-docflow-toolbar strong { display: block; font: 700 14px var(--font-sans); color: var(--fg1); }
+.dk-docflow-toolbar span { display: block; margin-top: 3px; color: var(--fg3); font: 500 13px/1.45 var(--font-sans); }
+.dk-docflow-admin { display: flex; flex-wrap: wrap; gap: 8px; }
+.dk-docflow-admin button, .dk-doc-history { border: 1px solid var(--line-strong); background: white; color: var(--fg-brass); border-radius: 999px; padding: 8px 10px; font: 700 11px var(--font-sans); }
+.dk-docflow-section { display: grid; gap: 10px; }
+.dk-docflow-list { display: grid; gap: 9px; }
+.dk-docflow-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; background: var(--bg-surface); border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: var(--r-lg); padding: 14px; box-shadow: var(--shadow-xs); }
+.dk-docflow-row--uploaded, .dk-docflow-row--ready_for_review { border-left-color: var(--info); }
+.dk-docflow-row--reviewed { border-left-color: var(--brass-500); }
+.dk-docflow-row--approved { border-left-color: var(--ok); }
+.dk-docflow-row--superseded, .dk-docflow-row--na { border-left-color: var(--neutral); opacity: .76; }
+.dk-docflow-row--rejected { border-left-color: var(--risk); }
+.dk-docflow-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 7px; }
+.dk-docflow-title-row h3 { margin: 0; font: 700 14px/1.25 var(--font-sans); color: var(--fg1); }
+.dk-docflow-meta { display: flex; flex-wrap: wrap; gap: 8px 12px; color: var(--fg3); font: 500 12.5px/1.5 var(--font-sans); }
+.dk-file-chip { color: var(--info-text); background: var(--info-surface); border: 1px solid var(--info-line); border-radius: 999px; padding: 3px 8px; }
+.dk-docflow-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.dk-docflow-empty { background: var(--bg-surface); border: 1px dashed var(--line-strong); border-radius: var(--r-lg); padding: 22px; color: var(--fg2); }
+.dk-docflow-empty strong { color: var(--fg1); display: block; margin-bottom: 6px; }
+
+@media (max-width: 980px) {
+  .lp-hero-grid, .lp-split, .lp-split--reverse { grid-template-columns: 1fr; }
+  .lp-workflow-rail, .lp-problem-grid { grid-template-columns: repeat(2, 1fr); }
+  .lp-phase-grid { grid-template-columns: 1fr; }
+  .lp-product-card { max-width: 680px; }
+  .dk-docflow-row { grid-template-columns: 1fr; }
+  .dk-docflow-actions { justify-content: flex-start; }
+}
+@media (max-width: 640px) {
+  .lp-nav-inner { height: auto; padding: 10px 0; align-items: flex-start; }
+  .lp-nav-actions { width: 100%; justify-content: flex-end; }
+  .lp-nav-signin { display: none; }
+  .lp-product-workspace, .lp-product-metrics, .lp-workflow-rail, .lp-problem-grid, .lp-amend-stack { grid-template-columns: 1fr; }
+  .lp-checklist-row { grid-template-columns: 1fr; }
+  .lp-deadline-strip, .lp-inline-cta, .dk-docflow-toolbar { flex-direction: column; align-items: stretch; }
+  .lp-hero { padding-top: 3rem; }
+}
