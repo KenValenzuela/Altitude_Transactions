@@ -53,6 +53,11 @@ export type TaskStatus = 'not_started' | 'in_progress' | 'complete' | 'not_appli
 export type DeadlineApplicability = 'active' | 'not_applicable' | 'completed';
 export type DeadlineStatus = DeadlineApplicability;
 export type DocumentStatus = 'missing' | 'received' | 'reviewed' | 'approved' | 'pending' | 'upcoming' | 'na';
+export type NeededState = 'needed' | 'not_applicable';
+export type DocumentWorkflowStatus = 'missing' | 'uploaded' | 'ready_for_review' | 'reviewed' | 'approved' | 'superseded' | 'rejected';
+export type ExtractedDeadlineReviewStatus = 'pending' | 'reviewed' | 'approved' | 'rejected';
+export type RoleName = 'admin' | 'agent' | 'broker' | 'system';
+export type TransactionLifecycleStatus = 'active' | 'archived' | 'closed';
 export type RiskLevel = 'low' | 'medium' | 'high';
 
 export interface ApiResponse<T> {
@@ -237,11 +242,125 @@ export interface DocumentRequirement {
   sourceDocumentId?: string;
   dueDate?: string;
   notes?: string;
+  neededState?: NeededState;
+  workflowStatus?: DocumentWorkflowStatus;
+  fileId?: string;
+  fileName?: string;
+  uploadCount?: number;
+  sequenceNumber?: number;
+  uploadedAt?: string;
+  uploadedBy?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  supersedesDocumentId?: string;
+  sourceNotes?: string;
   createdAt: string;
   updatedAt: string;
   name?: string;
   source?: string;
   state?: string;
+}
+
+
+export interface DocumentTemplate {
+  id: string;
+  sectionName: string;
+  documentName: string;
+  sortOrder: number;
+  isRequiredByDefault: boolean;
+  adminEditable: boolean;
+  createdBy: string;
+  updatedBy: string;
+}
+
+export interface TransactionDocument {
+  id: string;
+  transactionId: string;
+  templateId?: string;
+  documentName: string;
+  sectionName: string;
+  neededState: NeededState;
+  workflowStatus: DocumentWorkflowStatus;
+  fileId?: string;
+  fileName?: string;
+  uploadCount: number;
+  sequenceNumber?: number;
+  uploadedAt?: string;
+  uploadedBy?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  supersedesDocumentId?: string;
+  sourceNotes?: string;
+}
+
+export interface DeadlineSourceChange {
+  id: string;
+  transactionId: string;
+  name: string;
+  date: string;
+  previousDate?: string;
+  sourceDocumentId: string;
+  sourceDocumentName: string;
+  confidence: number;
+  reviewStatus: ExtractedDeadlineReviewStatus;
+  uploadedDate: string;
+  approvedBy?: string;
+  approvedDate?: string;
+}
+
+export interface ContactWorkflowRecord {
+  id: string;
+  transactionId: string;
+  contactType: string;
+  name?: string;
+  company?: string;
+  role: string;
+  email?: string;
+  phone?: string;
+  isCustom: boolean;
+  createdBy: string;
+  adminOnlyDelete: boolean;
+}
+
+export interface RolePermission {
+  role: RoleName;
+  label: string;
+  canUploadDocuments: boolean;
+  canViewTransaction: boolean;
+  canApproveExtraction: boolean;
+  canApproveDeadlineUpdates: boolean;
+  canArchiveTransactions: boolean;
+  canDeleteTemplates: boolean;
+  canGloballyEditTemplates: boolean;
+  canReorderTemplates: boolean;
+  canManageContacts: boolean;
+}
+
+export interface TransactionWorkflowRecord {
+  id: string;
+  propertyAddress: string;
+  status: TransactionLifecycleStatus;
+  brokerId: string;
+  agentId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowAuditLog {
+  id: string;
+  transactionId: string;
+  actorId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  oldValue?: string;
+  newValue?: string;
+  sourceDocumentId?: string;
+  createdAt: string;
 }
 
 export interface PostCloseTask {
@@ -298,6 +417,7 @@ export interface Transaction {
   tasks: TaskGroup[];
   contacts: Contact[];
   documentRequirements: DocumentRequirement[];
+  transactionDocuments?: TransactionDocument[];
   postCloseTasks: PostCloseTask[];
   auditEvents: ActivityLogItem[];
   money: { price: number; earnest: number; closeDate?: string; daysToClose: number };
