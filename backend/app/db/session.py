@@ -11,9 +11,12 @@ engine = create_engine(settings.database_url, echo=False, connect_args=_connect_
 
 
 def init_db() -> None:
-    """Create all tables. Idempotent."""
-    # Import models so SQLModel metadata is populated before create_all.
-    import app.models  # noqa: F401
+    """Create all tables. Idempotent.
+
+    Used for local SQLite quickstart and tests. Postgres deployments should run
+    `alembic upgrade head` instead (create_all is still safe on a fresh DB).
+    """
+    import app.models  # noqa: F401 - populate SQLModel metadata
 
     SQLModel.metadata.create_all(engine)
 

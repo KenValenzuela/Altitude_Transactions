@@ -1,7 +1,7 @@
 [project]
 name = "altitude-backend"
-version = "0.1.0"
-description = "Altitude — AI-assisted contract-to-close transaction coordinator backend"
+version = "0.2.0"
+description = "Altitude — AI-assisted contract-to-close transaction workflow engine (backend)"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard]>=0.110",
@@ -10,12 +10,22 @@ dependencies = [
     "pydantic-settings>=2.2",
     "uvicorn[standard]>=0.29",
     "python-multipart>=0.0.9",
+    "alembic>=1.13",
+    "PyJWT>=2.8",
+    "bcrypt>=4.1",
+    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "httpx>=0.27",
+]
+postgres = [
+    "psycopg2-binary>=2.9",
+]
+s3 = [
+    "boto3>=1.34",
 ]
 
 [build-system]
