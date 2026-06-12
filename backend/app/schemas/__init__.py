@@ -198,6 +198,7 @@ class ExtractionJobOut(CamelModel):
     status: str
     document_type: str | None = None
     classification_confidence: float | None = None
+    provider: str = ""
     error_message: str
     created_at: dt.datetime
     completed_at: dt.datetime | None = None
@@ -218,6 +219,10 @@ class ExtractedFieldOut(CamelModel):
     source_text: str
     review_decision: str | None = None
     created_at: dt.datetime
+
+
+class ExtractionJobDetailOut(ExtractionJobOut):
+    fields: list[ExtractedFieldOut] = []
 
 
 class ReviewDecisionCreate(CamelModel):

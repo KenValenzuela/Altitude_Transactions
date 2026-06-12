@@ -10,7 +10,17 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlmodel import Session, func, select
 
 from app.api.deps import (
@@ -30,6 +40,7 @@ from app.models import (
 )
 from app.schemas import UploadOut, UploadedFileOut
 from app.services.audit import record as audit
+from app.services.extraction import run_extraction_job
 from app.services.storage import get_storage, make_storage_key
 
 PDF_CONTENT_TYPES = {"application/pdf", "application/x-pdf"}
@@ -48,6 +59,7 @@ def _file_out(f: UploadedFile) -> UploadedFileOut:
 )
 async def upload_file(
     transaction_id: str,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     checklist_item_id: str | None = Form(default=None, alias="checklistItemId"),
     ctx: AuthContext = Depends(get_current_context),
@@ -150,6 +162,7 @@ async def upload_file(
             )
 
     session.commit()
+    background_tasks.add_task(run_extraction_job, job.id)
     return UploadOut(
         file_id=uploaded.id,
         checklist_item_id=item.id if item else None,
