@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.routes import auth, health, transactions
+from app.api.routes import admin, auth, contacts, dashboard, files, health, tasks, transactions
 from app.core.config import settings
 from app.db.seed import seed_initial_data
 from app.db.session import init_db
@@ -47,3 +47,8 @@ api_prefix = "/api"
 app.include_router(health.router, prefix=api_prefix)
 app.include_router(auth.router, prefix=api_prefix)
 app.include_router(transactions.router, prefix=api_prefix)
+app.include_router(files.router, prefix=api_prefix)
+app.include_router(contacts.router, prefix=api_prefix)
+app.include_router(tasks.router, prefix=api_prefix)
+app.include_router(dashboard.router, prefix=api_prefix)
+app.include_router(admin.router, prefix=api_prefix)

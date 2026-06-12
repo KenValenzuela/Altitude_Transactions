@@ -9,27 +9,39 @@ from sqlmodel import Session, func, select
 from app.api.deps import AuthContext, get_current_context, get_owned_transaction, require_admin
 from app.db.session import get_session
 from app.models import (
+    AuditLog,
     ChecklistItemStatus,
+    Deadline,
     DocumentChecklistItem,
     DocumentType,
     FinancingType,
+    Task,
     Transaction,
     TransactionSide,
     TransactionStatus,
 )
 from app.schemas import (
+    AuditEventOut,
     ChecklistItemCreate,
     ChecklistItemOut,
     ChecklistItemPatch,
     ChecklistOut,
     ChecklistSectionOut,
+    DeadlineOut,
+    TaskOut,
     TransactionCard,
     TransactionCreate,
     TransactionOut,
     TransactionPatch,
 )
 from app.services.audit import record as audit
-from app.services.checklist import SECTION_LABELS, SECTIONS, instantiate_checklist, is_item_overdue
+from app.services.checklist import (
+    SECTION_LABELS,
+    SECTIONS,
+    instantiate_checklist,
+    is_item_overdue,
+    recompute_transaction_status,
+)
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -363,6 +375,10 @@ def patch_checklist_item(
         new_value=item.status.value,
     )
 
+    tx = session.get(Transaction, transaction_id)
+    if tx is not None:
+        recompute_transaction_status(session, tx)
+
     session.commit()
     session.refresh(item)
     return _item_out(item)
@@ -423,3 +439,148 @@ def add_checklist_item(
     session.commit()
     session.refresh(item)
     return _item_out(item)
+
+
+@router.delete("/{transaction_id}/checklist/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_checklist_item(
+    transaction_id: str,
+    item_id: str,
+    ctx: AuthContext = Depends(require_admin),
+    session: Session = Depends(get_session),
+) -> None:
+    """Remove a custom checklist row. Core rows can only be marked N/A, never deleted."""
+    tx = get_owned_transaction(transaction_id, ctx, session)
+    item = session.get(DocumentChecklistItem, item_id)
+    if item is None or item.transaction_id != tx.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Checklist item not found")
+    if item.is_core:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Core checklist rows cannot be deleted")
+
+    audit(
+        session,
+        organization_id=ctx.organization_id,
+        transaction_id=tx.id,
+        actor_id=ctx.user.id,
+        event_type="checklist_item_deleted",
+        entity_type="document_checklist_item",
+        entity_id=item.id,
+        old_value=item.name,
+    )
+    session.delete(item)
+    recompute_transaction_status(session, tx)
+    session.commit()
+
+
+# ─── Archive ──────────────────────────────────────────────────────────────────
+
+@router.post("/{transaction_id}/archive", response_model=TransactionOut)
+def archive_transaction(
+    transaction_id: str,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> TransactionOut:
+    tx = get_owned_transaction(transaction_id, ctx, session)
+    if tx.status != TransactionStatus.archived:
+        old = tx.status.value
+        tx.status = TransactionStatus.archived
+        tx.archived_at = dt.datetime.now(dt.timezone.utc)
+        tx.updated_at = tx.archived_at
+        session.add(tx)
+        audit(
+            session,
+            organization_id=ctx.organization_id,
+            transaction_id=tx.id,
+            actor_id=ctx.user.id,
+            event_type="transaction_archived",
+            entity_type="transaction",
+            entity_id=tx.id,
+            old_value=old,
+            new_value=tx.status.value,
+        )
+        session.commit()
+        session.refresh(tx)
+    return _tx_out(tx)
+
+
+@router.post("/{transaction_id}/unarchive", response_model=TransactionOut)
+def unarchive_transaction(
+    transaction_id: str,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> TransactionOut:
+    tx = get_owned_transaction(transaction_id, ctx, session)
+    if tx.status == TransactionStatus.archived:
+        tx.status = TransactionStatus.active
+        tx.archived_at = None
+        tx.updated_at = dt.datetime.now(dt.timezone.utc)
+        session.add(tx)
+        recompute_transaction_status(session, tx)
+        audit(
+            session,
+            organization_id=ctx.organization_id,
+            transaction_id=tx.id,
+            actor_id=ctx.user.id,
+            event_type="transaction_unarchived",
+            entity_type="transaction",
+            entity_id=tx.id,
+            old_value="archived",
+            new_value=tx.status.value,
+        )
+        session.commit()
+        session.refresh(tx)
+    return _tx_out(tx)
+
+
+# ─── Workspace reads: deadlines, tasks, audit ────────────────────────────────
+
+@router.get("/{transaction_id}/deadlines", response_model=list[DeadlineOut])
+def list_deadlines(
+    transaction_id: str,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> list[DeadlineOut]:
+    tx = get_owned_transaction(transaction_id, ctx, session)
+    deadlines = session.exec(
+        select(Deadline)
+        .where(Deadline.transaction_id == tx.id)
+        .order_by(Deadline.due_date)  # type: ignore[arg-type]
+    ).all()
+    today = dt.date.today()
+    return [
+        DeadlineOut.model_validate(
+            d, update={"days_remaining": (d.due_date - today).days if d.due_date else None}
+        )
+        for d in deadlines
+    ]
+
+
+@router.get("/{transaction_id}/tasks", response_model=list[TaskOut])
+def list_tasks(
+    transaction_id: str,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> list[TaskOut]:
+    tx = get_owned_transaction(transaction_id, ctx, session)
+    tasks = session.exec(
+        select(Task)
+        .where(Task.transaction_id == tx.id)
+        .order_by(Task.due_date)  # type: ignore[arg-type]
+    ).all()
+    return [TaskOut.model_validate(t) for t in tasks]
+
+
+@router.get("/{transaction_id}/audit", response_model=list[AuditEventOut])
+def list_audit(
+    transaction_id: str,
+    limit: int = 100,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> list[AuditEventOut]:
+    tx = get_owned_transaction(transaction_id, ctx, session)
+    events = session.exec(
+        select(AuditLog)
+        .where(AuditLog.transaction_id == tx.id)
+        .order_by(AuditLog.created_at.desc())  # type: ignore[attr-defined]
+        .limit(min(limit, 500))
+    ).all()
+    return [AuditEventOut.model_validate(e) for e in events]

@@ -34,12 +34,15 @@ def client(tmp_path) -> Generator[TestClient, None, None]:
         with Session(test_engine) as session:
             yield session
 
+    from app.api.deps import extraction_rate_limiter
     from app.api.deps import get_session as deps_get_session
     from app.db.seed import seed_initial_data
     from app.db.session import get_session as db_get_session
     from app.main import app
 
     seed_initial_data()
+    # The limiter is module-level state; isolate tests from each other.
+    extraction_rate_limiter._calls.clear()
 
     app.dependency_overrides[deps_get_session] = get_session_override
     app.dependency_overrides[db_get_session] = get_session_override

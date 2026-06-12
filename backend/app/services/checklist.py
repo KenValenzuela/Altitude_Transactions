@@ -11,6 +11,7 @@ from app.models import (
     DocumentType,
     DocumentTypeTemplate,
     Transaction,
+    TransactionStatus,
 )
 
 # Canonical checklist sections (Colorado contract-to-close workflow).
@@ -142,3 +143,26 @@ def find_item_for_document_type(
         )
         .order_by(DocumentChecklistItem.sort_order)
     ).first()
+
+
+def recompute_transaction_status(session: Session, tx: Transaction) -> None:
+    """Derive `approved` from checklist completeness; `archived` is sticky.
+
+    A transaction is `approved` when every required checklist row is approved
+    or N/A. Called after any checklist/review state change. Caller commits.
+    """
+    if tx.status == TransactionStatus.archived:
+        return
+    required = session.exec(
+        select(DocumentChecklistItem).where(
+            DocumentChecklistItem.transaction_id == tx.id,
+            DocumentChecklistItem.required == True,  # noqa: E712
+        )
+    ).all()
+    resolved = (ChecklistItemStatus.approved, ChecklistItemStatus.not_applicable)
+    all_done = bool(required) and all(i.status in resolved for i in required)
+    new_status = TransactionStatus.approved if all_done else TransactionStatus.active
+    if tx.status != new_status:
+        tx.status = new_status
+        tx.updated_at = dt.datetime.now(dt.timezone.utc)
+        session.add(tx)

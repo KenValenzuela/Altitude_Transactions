@@ -184,6 +184,7 @@ class UploadOut(CamelModel):
     file_id: str
     checklist_item_id: str | None = None
     extraction_job_id: str | None = None
+    version: int = 1
     status: str
 
 
@@ -323,6 +324,16 @@ class TransactionContactOut(CamelModel):
     updated_at: dt.datetime
 
 
+class TransactionContactCreate(CamelModel):
+    role_key: str
+    name: str = ""
+    company: str = ""
+    email: str = ""
+    phone: str = ""
+    license_number: str = ""
+    notes: str = ""
+
+
 class TransactionContactPatch(CamelModel):
     name: str | None = None
     company: str | None = None
@@ -330,6 +341,19 @@ class TransactionContactPatch(CamelModel):
     phone: str | None = None
     license_number: str | None = None
     notes: str | None = None
+
+
+class ContactRoleOut(CamelModel):
+    id: str
+    key: str
+    label: str
+    is_core: bool
+    sort_order: int
+
+
+class ContactRoleCreate(CamelModel):
+    key: str
+    label: str
 
 
 # ─── Audit ────────────────────────────────────────────────────────────────────
@@ -348,11 +372,66 @@ class AuditEventOut(CamelModel):
     created_at: dt.datetime
 
 
+# ─── Admin: checklist templates ──────────────────────────────────────────────
+
+class TemplateOut(CamelModel):
+    id: str
+    name: str
+    section: str
+    sort_order: int
+    required: bool
+    is_core: bool
+    active: bool
+    document_type: str | None = None
+
+
+class TemplateCreate(CamelModel):
+    name: str
+    section: str
+    required: bool = False
+    document_type: str | None = None
+
+
+class TemplatePatch(CamelModel):
+    name: str | None = None
+    section: str | None = None
+    required: bool | None = None
+    active: bool | None = None
+
+
 # ─── Dashboard ────────────────────────────────────────────────────────────────
+
+class DashboardDeadlineOut(CamelModel):
+    id: str
+    transaction_id: str
+    property_address: str
+    name: str
+    due_date: dt.date | None = None
+    days_remaining: int | None = None
+    overdue: bool = False
+
+
+class DashboardChecklistItemOut(CamelModel):
+    id: str
+    transaction_id: str
+    property_address: str
+    name: str
+    section: str
+    status: str
+    due_date: dt.date | None = None
+    overdue: bool = False
+
 
 class DashboardOut(CamelModel):
     total_transactions: int
-    open_transactions: int
-    pending_review: int
+    active_transactions: int
+    approved_transactions: int
+    missing_documents: int
+    pending_reviews: int
     overdue_items: int
     closing_this_week: int
+    missing_document_items: list[DashboardChecklistItemOut] = []
+    review_queue: list[DashboardChecklistItemOut] = []
+    upcoming_deadlines: list[DashboardDeadlineOut] = []
+    recent_files: list[UploadedFileOut] = []
+    recent_activity: list[AuditEventOut] = []
