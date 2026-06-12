@@ -1,4 +1,4 @@
-"""Task status updates (open / done / not_applicable)."""
+"""Tasks: manual creation and status updates (open / done / not_applicable)."""
 from __future__ import annotations
 
 import datetime as dt
@@ -9,13 +9,47 @@ from sqlmodel import Session
 from app.api.deps import AuthContext, get_current_context, get_owned_transaction
 from app.db.session import get_session
 from app.models import Task, TaskStatus
-from app.schemas import TaskOut, TaskPatch
+from app.schemas import TaskCreate, TaskOut, TaskPatch
 from app.services.audit import record as audit
 
-router = APIRouter(prefix="/tasks", tags=["tasks"])
+router = APIRouter(tags=["tasks"])
 
 
-@router.patch("/{task_id}", response_model=TaskOut)
+@router.post(
+    "/transactions/{transaction_id}/tasks",
+    response_model=TaskOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_task(
+    transaction_id: str,
+    body: TaskCreate,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> TaskOut:
+    tx = get_owned_transaction(transaction_id, ctx, session)
+    task = Task(
+        transaction_id=tx.id,
+        title=body.title,
+        due_date=body.due_date,
+        source="manual",
+    )
+    session.add(task)
+    audit(
+        session,
+        organization_id=ctx.organization_id,
+        transaction_id=tx.id,
+        actor_id=ctx.user.id,
+        event_type="task_created",
+        entity_type="task",
+        entity_id=task.id,
+        new_value=task.title,
+    )
+    session.commit()
+    session.refresh(task)
+    return TaskOut.model_validate(task)
+
+
+@router.patch("/tasks/{task_id}", response_model=TaskOut)
 def patch_task(
     task_id: str,
     body: TaskPatch,

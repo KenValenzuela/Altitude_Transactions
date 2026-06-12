@@ -42,6 +42,7 @@ from app.schemas import (
 from app.services.apply_engine import apply_job, apply_proposal, latest_decisions
 from app.services.audit import record as audit
 from app.services.checklist import recompute_transaction_status
+from app.services.deadline_engine import sync_tasks_for_transaction
 
 router = APIRouter(tags=["review"])
 
@@ -315,6 +316,8 @@ def approve_document(
 
     tx = get_owned_transaction(job.transaction_id, ctx, session)
     recompute_transaction_status(session, tx)
+    session.flush()
+    sync_tasks_for_transaction(session, job.transaction_id, ctx.organization_id, ctx.user.id)
     session.commit()
 
     return ApplyResultOut(job_id=job.id, status=job.status.value, **counts)
@@ -478,6 +481,10 @@ def approve_proposal(
         old_value=proposal.old_date.isoformat() if proposal.old_date else None,
         new_value=proposal.new_date.isoformat() if proposal.new_date else None,
         source_file_id=proposal.source_file_id,
+    )
+    session.flush()
+    sync_tasks_for_transaction(
+        session, proposal.transaction_id, ctx.organization_id, ctx.user.id
     )
     session.commit()
     session.refresh(proposal)

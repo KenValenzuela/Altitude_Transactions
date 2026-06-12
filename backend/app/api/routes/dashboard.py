@@ -13,7 +13,11 @@ from app.models import (
     ChecklistItemStatus,
     Deadline,
     DeadlineApplicability,
+    DeadlineChangeProposal,
     DocumentChecklistItem,
+    ProposalStatus,
+    Task,
+    TaskStatus,
     Transaction,
     TransactionStatus,
     UploadedFile,
@@ -48,6 +52,8 @@ def get_dashboard(
 
     items: list[DocumentChecklistItem] = []
     deadlines: list[Deadline] = []
+    pending_proposals = 0
+    open_tasks = 0
     if open_tx_ids:
         items = list(
             session.exec(
@@ -61,6 +67,22 @@ def get_dashboard(
                 select(Deadline).where(
                     Deadline.transaction_id.in_(open_tx_ids),  # type: ignore[attr-defined]
                     Deadline.applicability == DeadlineApplicability.active,
+                )
+            ).all()
+        )
+        pending_proposals = len(
+            session.exec(
+                select(DeadlineChangeProposal).where(
+                    DeadlineChangeProposal.transaction_id.in_(open_tx_ids),  # type: ignore[attr-defined]
+                    DeadlineChangeProposal.status == ProposalStatus.pending,
+                )
+            ).all()
+        )
+        open_tasks = len(
+            session.exec(
+                select(Task).where(
+                    Task.transaction_id.in_(open_tx_ids),  # type: ignore[attr-defined]
+                    Task.status == TaskStatus.open,
                 )
             ).all()
         )
@@ -106,6 +128,8 @@ def get_dashboard(
         approved_transactions=sum(1 for t in txs if t.status == TransactionStatus.approved),
         missing_documents=len(missing),
         pending_reviews=len(in_review),
+        pending_proposals=pending_proposals,
+        open_tasks=open_tasks,
         overdue_items=len(overdue_items) + len(overdue_deadlines),
         closing_this_week=sum(
             1

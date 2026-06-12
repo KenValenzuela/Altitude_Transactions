@@ -347,6 +347,11 @@ class TaskOut(CamelModel):
     updated_at: dt.datetime
 
 
+class TaskCreate(CamelModel):
+    title: str
+    due_date: dt.date | None = None
+
+
 class TaskPatch(CamelModel):
     status: str | None = None  # open | done | not_applicable
 
@@ -473,6 +478,8 @@ class DashboardOut(CamelModel):
     approved_transactions: int
     missing_documents: int
     pending_reviews: int
+    pending_proposals: int = 0
+    open_tasks: int = 0
     overdue_items: int
     closing_this_week: int
     missing_document_items: list[DashboardChecklistItemOut] = []
