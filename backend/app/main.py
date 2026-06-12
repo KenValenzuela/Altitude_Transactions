@@ -17,6 +17,7 @@ from app.api.routes import (
     extractions,
     files,
     health,
+    review,
     tasks,
     transactions,
 )
@@ -59,6 +60,7 @@ app.include_router(auth.router, prefix=api_prefix)
 app.include_router(transactions.router, prefix=api_prefix)
 app.include_router(files.router, prefix=api_prefix)
 app.include_router(extractions.router, prefix=api_prefix)
+app.include_router(review.router, prefix=api_prefix)
 app.include_router(contacts.router, prefix=api_prefix)
 app.include_router(tasks.router, prefix=api_prefix)
 app.include_router(dashboard.router, prefix=api_prefix)

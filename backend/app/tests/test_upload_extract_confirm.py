@@ -6,8 +6,6 @@ targeted at a checklist row land that row in `in_review`.
 """
 from __future__ import annotations
 
-import pytest
-
 FAKE_PDF = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
 
 
@@ -592,15 +590,3 @@ def test_transaction_approved_when_required_items_resolved(client, admin_headers
     )
     detail = client.get(f"/api/transactions/{tx_id}", headers=admin_headers).json()
     assert detail["status"] == "active"
-
-
-# ─── Phase 4 placeholders ─────────────────────────────────────────────────────
-
-@pytest.mark.skip(reason="Phase 4: review decisions and canonical fields")
-def test_approve_field_writes_canonical_field(client, admin_headers):
-    """Approving an extracted field writes a CanonicalField row."""
-
-
-@pytest.mark.skip(reason="Phase 4: amendment proposals require explicit approval")
-def test_amendment_deadline_proposal_requires_approval(client, admin_headers):
-    """An Amend/Extend extraction creates a DeadlineChangeProposal, not a direct write."""

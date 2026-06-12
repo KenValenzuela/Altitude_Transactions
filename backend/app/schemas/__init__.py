@@ -225,6 +225,46 @@ class ExtractionJobDetailOut(ExtractionJobOut):
     fields: list[ExtractedFieldOut] = []
 
 
+# ─── Review ───────────────────────────────────────────────────────────────────
+
+class ReviewFieldOut(ExtractedFieldOut):
+    """Extracted field + its latest human decision (if any)."""
+
+    decision: str | None = None
+    corrected_value: str | None = None
+    decision_reason: str | None = None
+    reviewer_id: str | None = None
+    decided_at: dt.datetime | None = None
+
+
+class ReviewJobOut(CamelModel):
+    job: ExtractionJobOut
+    file: UploadedFileOut
+    checklist_item_name: str | None = None
+    fields: list[ReviewFieldOut]
+    undecided_count: int
+    proposal_count: int = 0
+
+
+class DocumentApproveRequest(CamelModel):
+    # Undecided fields are bulk-approved (each gets an audited ReviewDecision)
+    # unless the caller demands every field be individually decided first.
+    approve_remaining: bool = True
+
+
+class DocumentRejectRequest(CamelModel):
+    reason: str
+
+
+class ApplyResultOut(CamelModel):
+    job_id: str
+    status: str
+    canonical: int
+    deadlines_created: int
+    deadlines_updated: int
+    proposals: int
+
+
 class ReviewDecisionCreate(CamelModel):
     decision: str  # approved | edited | rejected | marked_na
     corrected_value: str | None = None

@@ -547,8 +547,19 @@ def list_deadlines(
     ).all()
     today = dt.date.today()
     return [
-        DeadlineOut.model_validate(
-            d, update={"days_remaining": (d.due_date - today).days if d.due_date else None}
+        DeadlineOut(
+            id=d.id,
+            transaction_id=d.transaction_id,
+            deadline_key=d.deadline_key,
+            name=d.name,
+            section_reference=d.section_reference,
+            due_date=d.due_date,
+            due_time=d.due_time,
+            applicability=d.applicability.value,
+            days_remaining=(d.due_date - today).days if d.due_date else None,
+            source_field_id=d.source_field_id,
+            created_at=d.created_at,
+            updated_at=d.updated_at,
         )
         for d in deadlines
     ]
