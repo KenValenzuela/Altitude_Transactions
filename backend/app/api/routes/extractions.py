@@ -1,59 +1,94 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+"""Extraction job routes: status polling, field results, retry."""
+from __future__ import annotations
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlmodel import Session, select
 
-from app.api.deps import get_current_user, get_session
-from app.models import ExtractionRun, ExtractedField, SourceDocument, Transaction, User, ExtractionStatus
-from app.schemas import ConfirmRequest, DeadlineOut, ExtractionFlag, ExtractionJobOut, ExtractedFieldOut, TransactionDetail
-from app.services import transaction_service
-from app.services.fixture_provider import DEADLINE_DATA
+from app.api.deps import (
+    AuthContext,
+    extraction_rate_limiter,
+    get_current_context,
+    get_owned_transaction,
+)
+from app.db.session import get_session
+from app.models import ExtractedField, ExtractionJob, ExtractionJobStatus
+from app.schemas import ExtractedFieldOut, ExtractionJobDetailOut, ExtractionJobOut
+from app.services.extraction import run_extraction_job
 
-router = APIRouter(prefix="/extractions", tags=["extractions"])
+router = APIRouter(tags=["extractions"])
 
-@router.post("/start", response_model=ExtractionJobOut)
-def start_extraction(body: dict, user: User = Depends(get_current_user), session: Session = Depends(get_session)):
-    source_document_id = body.get("sourceDocumentId") or body.get("source_document_id") or body.get("documentId")
-    if not source_document_id:
-        raise HTTPException(status_code=400, detail="sourceDocumentId is required")
-    doc = session.get(SourceDocument, source_document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Source document not found")
-    from datetime import datetime, timezone as _tz
-    run = ExtractionRun(
-        source_document_id=doc.id, transaction_id=doc.transaction_id,
-        status=ExtractionStatus.needs_review,
-        provider="FixtureExtractionProvider",
-        model_name="fixture-extraction-provider-v1",
-        schema_version="altitude-ctme-v1",
-        stage="completed",
-        completed_at=datetime.now(_tz.utc),
-        progress_percent=100,
-    )
-    session.add(run); session.commit(); session.refresh(run)
-    return get_run(run.id, user, session)
 
-@router.get("/{run_id}", response_model=ExtractionJobOut)
-def get_run(run_id: str, user: User = Depends(get_current_user), session: Session = Depends(get_session)):
-    run = session.get(ExtractionRun, run_id)
-    if not run: raise HTTPException(status_code=404, detail="Extraction run not found")
-    fields = session.exec(select(ExtractedField).where(ExtractedField.extraction_run_id == run.id)).all()
-    field_outs = [ExtractedFieldOut.model_validate({**f.model_dump(), "category": f.source_section}) for f in fields]
-    return ExtractionJobOut(
-        id=run.id, status=run.status.value, progress_percent=run.progress_percent,
-        transaction_id=run.transaction_id, source_document_id=run.source_document_id,
-        fields=field_outs, deadlines=[],
-        flags=[ExtractionFlag(title="Additional Provision §30", detail="Additional provisions detected and preserved for broker review.")],
-        review_summary=transaction_service.compute_review_summary(list(fields)),
+def _job_out(job: ExtractionJob) -> dict:
+    return dict(
+        id=job.id,
+        transaction_id=job.transaction_id,
+        file_id=job.file_id,
+        checklist_item_id=job.checklist_item_id,
+        status=job.status.value,
+        document_type=job.document_type.value if job.document_type else None,
+        classification_confidence=job.classification_confidence,
+        provider=job.provider,
+        error_message=job.error_message,
+        created_at=job.created_at,
+        completed_at=job.completed_at,
     )
 
-@router.get("/{run_id}/events")
-def run_events(run_id: str):
-    return {"detail": "SSE deferred; use polling on GET /api/extractions/{run_id}.", "runId": run_id}
 
-@router.post("/{job_id}/confirm", response_model=TransactionDetail)
-def confirm_extraction(job_id: str, body: ConfirmRequest, user: User = Depends(get_current_user), session: Session = Depends(get_session)):
-    run = session.get(ExtractionRun, job_id)
-    if not run: raise HTTPException(status_code=404, detail="Extraction job not found")
-    doc = session.get(SourceDocument, run.source_document_id)
-    if not doc: raise HTTPException(status_code=404, detail="Source document not found")
-    tx = transaction_service.build_from_extraction(session, user.id, run, doc) if not run.transaction_id else session.get(Transaction, run.transaction_id)
-    return transaction_service.to_detail(session, tx)
+def _get_owned_job(job_id: str, ctx: AuthContext, session: Session) -> ExtractionJob:
+    job = session.get(ExtractionJob, job_id)
+    if job is None or job.organization_id != ctx.organization_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Extraction job not found")
+    return job
+
+
+@router.get("/extraction-jobs/{job_id}", response_model=ExtractionJobDetailOut)
+def get_extraction_job(
+    job_id: str,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> ExtractionJobDetailOut:
+    job = _get_owned_job(job_id, ctx, session)
+    fields = session.exec(
+        select(ExtractedField)
+        .where(ExtractedField.job_id == job.id)
+        .order_by(ExtractedField.created_at)  # type: ignore[arg-type]
+    ).all()
+    return ExtractionJobDetailOut(
+        **_job_out(job),
+        fields=[ExtractedFieldOut.model_validate(f) for f in fields],
+    )
+
+
+@router.get(
+    "/transactions/{transaction_id}/extraction-jobs",
+    response_model=list[ExtractionJobOut],
+)
+def list_extraction_jobs(
+    transaction_id: str,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> list[ExtractionJobOut]:
+    tx = get_owned_transaction(transaction_id, ctx, session)
+    jobs = session.exec(
+        select(ExtractionJob)
+        .where(ExtractionJob.transaction_id == tx.id)
+        .order_by(ExtractionJob.created_at.desc())  # type: ignore[attr-defined]
+    ).all()
+    return [ExtractionJobOut(**_job_out(j)) for j in jobs]
+
+
+@router.post("/extraction-jobs/{job_id}/retry", response_model=ExtractionJobOut)
+def retry_extraction_job(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> ExtractionJobOut:
+    job = _get_owned_job(job_id, ctx, session)
+    if job.status != ExtractionJobStatus.failed:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"Only failed jobs can be retried (status: {job.status.value})"
+        )
+    extraction_rate_limiter.check(ctx.user.id)
+    background_tasks.add_task(run_extraction_job, job.id)
+    return ExtractionJobOut(**_job_out(job))

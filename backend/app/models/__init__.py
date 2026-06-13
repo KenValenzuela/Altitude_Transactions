@@ -1,4 +1,11 @@
-"""Altitude workflow SQLModel tables for the Altitude Transactions custom build."""
+"""Altitude Transactions data model.
+
+Design invariant: raw AI output (`ExtractedField`) is immutable; human decisions
+(`ReviewDecision`) are append-only; canonical transaction state (`CanonicalField`,
+`Transaction` columns, `Deadline`, `TransactionContact`) is written only by the
+deterministic apply engine from approved/edited fields. Every meaningful action
+writes an `AuditLog` row.
+"""
 from __future__ import annotations
 
 import datetime as dt
@@ -6,7 +13,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, UniqueConstraint
 
 
 def _uuid() -> str:
@@ -17,51 +24,83 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# --------------------------------------------------------------------------- enums
+
+
+class Role(str, Enum):
+    admin = "admin"
+    agent = "agent"
+    tc = "tc"  # transaction coordinator (reserved; treated as reviewer)
+
+
+class TransactionSide(str, Enum):
+    buyer = "buyer"
+    seller = "seller"
+
+
+class FinancingType(str, Enum):
+    cash = "cash"
+    fha = "fha"
+    va = "va"
+    conventional = "conventional"
+    investment = "investment"
+    other = "other"
+
+
 class TransactionStatus(str, Enum):
-    draft = "draft"
-    under_contract = "under_contract"
-    in_review = "in_review"
     active = "active"
-    closing = "closing"
-    closed = "closed"
-    cancelled = "cancelled"
-
-
-class ExtractionStatus(str, Enum):
-    queued = "queued"
-    uploading = "uploading"
-    parsing_pdf = "parsing_pdf"
-    extracting_fields = "extracting_fields"
-    generating_deadlines = "generating_deadlines"
-    generating_tasks = "generating_tasks"
-    needs_review = "needs_review"
+    pending_review = "pending_review"
     approved = "approved"
-    failed = "failed"
+    archived = "archived"
 
 
-class PopulationStatus(str, Enum):
-    populated = "populated"
-    missing_required = "missing_required"
+class ChecklistItemStatus(str, Enum):
+    """Workflow states for checklist rows. `overdue` is derived at read time."""
+
+    needed = "needed"
     not_applicable = "not_applicable"
-    redacted_in_source = "redacted_in_source"
-    completed = "completed"
-    needs_human_review = "needs_human_review"
-    manual_override = "manual_override"
-    superseded_by_amendment = "superseded_by_amendment"
-
-
-class ReviewStatus(str, Enum):
-    pending = "pending"
+    uploaded = "uploaded"
+    in_review = "in_review"
+    needs_correction = "needs_correction"
     approved = "approved"
-    edited = "edited"
     rejected = "rejected"
 
 
-class TaskStatus(str, Enum):
-    not_started = "not_started"
-    in_progress = "in_progress"
-    complete = "complete"
-    not_applicable = "not_applicable"
+class ExtractionJobStatus(str, Enum):
+    pending = "pending"
+    classifying = "classifying"
+    extracting = "extracting"
+    needs_review = "needs_review"
+    completed = "completed"
+    failed = "failed"
+
+
+class DocumentType(str, Enum):
+    contract_to_buy_and_sell = "contract_to_buy_and_sell"
+    counterproposal = "counterproposal"
+    amend_extend = "amend_extend"
+    earnest_money_receipt = "earnest_money_receipt"
+    inspection_objection = "inspection_objection"
+    inspection_resolution = "inspection_resolution"
+    closing_instructions = "closing_instructions"
+    hoa_status_letter = "hoa_status_letter"
+    home_inspection_report = "home_inspection_report"
+    radon_report = "radon_report"
+    contractor_invoice = "contractor_invoice"
+    other = "other"
+
+
+class ReviewDecisionType(str, Enum):
+    approved = "approved"
+    edited = "edited"
+    rejected = "rejected"
+    marked_na = "marked_na"
+
+
+class ProposalStatus(str, Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
 
 
 class DeadlineApplicability(str, Enum):
@@ -70,263 +109,350 @@ class DeadlineApplicability(str, Enum):
     completed = "completed"
 
 
-class RiskLevel(str, Enum):
-    low = "low"
-    medium = "medium"
-    high = "high"
-
-
-class RequiredStatus(str, Enum):
-    required = "required"
-    conditional = "conditional"
+class TaskStatus(str, Enum):
+    open = "open"
+    done = "done"
     not_applicable = "not_applicable"
 
 
-class ReceivedStatus(str, Enum):
-    missing = "missing"
-    received = "received"
-    reviewed = "reviewed"
-    approved = "approved"
+class ActorType(str, Enum):
+    user = "user"
+    system = "system"
+    ai = "ai"
 
 
-class AvailabilityStatus(str, Enum):
-    """WHY a field value is or is not present."""
-    available = "available"
-    missing = "missing"
-    unavailable_now = "unavailable_now"
-    redacted = "redacted"
-    unreadable = "unreadable"
-
-
-class ApplicabilityStatus(str, Enum):
-    """WHETHER the field applies to this specific transaction."""
-    applicable = "applicable"
-    not_applicable = "not_applicable"
-    conditional = "conditional"
-    unknown = "unknown"
-
-
-class RequiredLevel(str, Enum):
-    """Urgency tier: blocks workspace creation vs. blocks closing vs. optional."""
-    required_to_create = "required_to_create"
-    required_before_closing = "required_before_closing"
-    optional = "optional"
-    informational = "informational"
-
-
-class ReviewDecision(str, Enum):
-    """Broker's final decision on a field — more specific than ReviewStatus."""
-    unreviewed = "unreviewed"
-    approved = "approved"
-    edited = "edited"
-    marked_not_applicable = "marked_not_applicable"
-    marked_unavailable = "marked_unavailable"
-    rejected = "rejected"
+# --------------------------------------------------------------------------- identity
 
 
 class User(SQLModel, table=True):
+    __tablename__ = "users"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    email: str = Field(index=True, unique=True)
+    name: str
+    hashed_password: str
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=_now)
+
+
+class Organization(SQLModel, table=True):
+    __tablename__ = "organizations"
+
     id: str = Field(default_factory=_uuid, primary_key=True)
     name: str
-    email: str = Field(index=True)
-    brokerage: str | None = None
-    license_no: str | None = None
+    created_at: datetime = Field(default_factory=_now)
+
+
+class OrganizationMember(SQLModel, table=True):
+    __tablename__ = "organization_members"
+    __table_args__ = (UniqueConstraint("organization_id", "user_id", name="uq_org_member"),)
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    organization_id: str = Field(foreign_key="organizations.id", index=True)
+    user_id: str = Field(foreign_key="users.id", index=True)
+    role: Role = Field(default=Role.agent)
+    created_at: datetime = Field(default_factory=_now)
+
+
+# --------------------------------------------------------------------------- transaction core
 
 
 class Transaction(SQLModel, table=True):
+    __tablename__ = "transactions"
+
     id: str = Field(default_factory=_uuid, primary_key=True)
-    owner_id: str = Field(foreign_key="user.id", index=True)
+    organization_id: str = Field(foreign_key="organizations.id", index=True)
+    created_by: str = Field(foreign_key="users.id", index=True)
+
     property_address: str = Field(index=True)
-    city: str
+    city: str = ""
     state: str = "CO"
-    zip: str | None = None
-    county: str | None = None
-    legal_description: str | None = None
+    zip: str = ""
+    county: str = ""
+    legal_description: str = ""
+    mls_number: str = ""
+
+    side: TransactionSide = Field(default=TransactionSide.buyer)
+    financing_type: FinancingType = Field(default=FinancingType.conventional)
+
     contract_date: dt.date | None = None
     closing_date: dt.date | None = None
     possession_date: dt.date | None = None
-    possession_time: str | None = None
-    status: TransactionStatus = Field(default=TransactionStatus.in_review)
-    risk_level: RiskLevel = Field(default=RiskLevel.medium)
-    completion_percent: int = 0
-    purchase_price: int = 0
-    earnest_money: int = 0
+    possession_time: str = ""
+
+    purchase_price: int = 0  # whole dollars
+    earnest_money: int = 0  # whole dollars
+
+    status: TransactionStatus = Field(default=TransactionStatus.active)
+    archived_at: datetime | None = None
+
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
 
 
-class SourceDocument(SQLModel, table=True):
-    __tablename__ = "source_documents"
+class ContactRole(SQLModel, table=True):
+    """Org-level contact types (admin-managed). Core rows cannot be deleted."""
+
+    __tablename__ = "contact_roles"
+    __table_args__ = (UniqueConstraint("organization_id", "key", name="uq_contact_role_key"),)
+
     id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str | None = Field(default=None, foreign_key="transaction.id", index=True)
-    filename: str
-    document_type: str = "CTME Contract to Buy and Sell Real Estate"
-    mime_type: str | None = None
-    file_size_bytes: int | None = None
-    storage_path: str | None = None
-    sha256_hash: str | None = None
-    uploaded_by: str | None = None
-    uploaded_at: datetime = Field(default_factory=_now)
-
-
-class ExtractionRun(SQLModel, table=True):
-    __tablename__ = "extraction_runs"
-    id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str | None = Field(default=None, foreign_key="transaction.id", index=True)
-    source_document_id: str = Field(foreign_key="source_documents.id", index=True)
-    status: ExtractionStatus = Field(default=ExtractionStatus.needs_review)
-    stage: str = "completed"
-    provider: str = "FixtureExtractionProvider"
-    started_at: datetime = Field(default_factory=_now)
-    completed_at: datetime | None = None
-    model_name: str = "fixture-extraction-provider-v1"
-    schema_version: str = "altitude-ctme-v1"
-    error_message: str | None = None
-    progress_percent: int = 100
-    metrics_json: str | None = None
-
-
-class ExtractedField(SQLModel, table=True):
-    __tablename__ = "extracted_fields"
-    id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str | None = Field(default=None, foreign_key="transaction.id", index=True)
-    extraction_run_id: str = Field(foreign_key="extraction_runs.id", index=True)
-    field_key: str
+    organization_id: str = Field(foreign_key="organizations.id", index=True)
+    key: str  # stable identifier, e.g. "buyer_agent"
     label: str
-    value: str | None = None
-    normalized_value: str | None = None
-    source_document_id: str = Field(foreign_key="source_documents.id", index=True)
-    source_page: int | None = None
-    source_section: str | None = None
-    evidence_text: str | None = None
-    confidence: float = 1.0
-    extraction_method: str = "fixture"
-    risk_level: str | None = None
-    value_type: str | None = None
-    # Multi-dimensional classification for human review triage
-    availability_status: str = "available"
-    applicability_status: str = "applicable"
-    required_level: str = "optional"
-    blocking: bool = False
-    # Review decision — richer than review_status for UI routing
-    review_decision: str = "unreviewed"
-    # User-facing guidance (plain English, not parser terms)
-    user_facing_message: str | None = None
-    suggested_action: str | None = None
-    # Value history
-    original_value: str | None = None
-    edited_value: str | None = None
-    # Parser metadata (not user-facing)
-    parser_message: str | None = None
-    conflict_options: str | None = None
-    # Legacy review fields
-    population_status: PopulationStatus = Field(default=PopulationStatus.populated)
-    review_status: ReviewStatus = Field(default=ReviewStatus.pending)
-    reviewed_by: str | None = None
-    reviewed_at: datetime | None = None
-    rejection_reason: str | None = None
+    is_core: bool = False
+    sort_order: int = 0
     created_at: datetime = Field(default_factory=_now)
 
 
-class Deadline(SQLModel, table=True):
+class TransactionContact(SQLModel, table=True):
+    __tablename__ = "transaction_contacts"
+
     id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str = Field(foreign_key="transaction.id", index=True)
-    item_number: str | None = None
-    section_reference: str | None = None
-    event_name: str
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
+    role_key: str = Field(index=True)
+    role_label: str = ""
+    name: str = ""
+    company: str = ""
+    email: str = ""
+    phone: str = ""
+    license_number: str = ""
+    address: str = ""
+    notes: str = ""
+    source: str = "manual"  # manual | extraction
+    source_file_id: str | None = Field(default=None, foreign_key="uploaded_files.id")
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
+# --------------------------------------------------------------------------- checklist
+
+
+class DocumentTypeTemplate(SQLModel, table=True):
+    """Org-level checklist template row (admin-managed)."""
+
+    __tablename__ = "document_type_templates"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    organization_id: str = Field(foreign_key="organizations.id", index=True)
+    name: str
+    section: str = Field(index=True)  # see services.checklist.SECTIONS
+    sort_order: int = 0
+    required: bool = True
+    is_core: bool = False  # core rows: agents can't delete, admins can deactivate
+    active: bool = True
+    document_type: DocumentType | None = None  # expected classification, if known
+    created_at: datetime = Field(default_factory=_now)
+
+
+class DocumentChecklistItem(SQLModel, table=True):
+    __tablename__ = "document_checklist_items"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
+    template_id: str | None = Field(default=None, foreign_key="document_type_templates.id")
+    name: str
+    section: str = Field(index=True)
+    sort_order: int = 0
+    required: bool = True
+    is_core: bool = False
+    document_type: DocumentType | None = None
+    status: ChecklistItemStatus = Field(default=ChecklistItemStatus.needed, index=True)
     due_date: dt.date | None = None
-    due_time: str | None = None
-    raw_value: str | None = None
-    applicability: DeadlineApplicability = Field(default=DeadlineApplicability.active)
-    confidence: float = 1.0
-    responsible_party: str | None = None
-    calendar_ready: bool = False
-    human_review_required: bool = False
-    source_document_id: str = Field(foreign_key="source_documents.id", index=True)
+    na_reason: str = ""
+    created_by: str | None = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
+# --------------------------------------------------------------------------- files & extraction
+
+
+class UploadedFile(SQLModel, table=True):
+    __tablename__ = "uploaded_files"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    organization_id: str = Field(foreign_key="organizations.id", index=True)
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
+    checklist_item_id: str | None = Field(
+        default=None, foreign_key="document_checklist_items.id", index=True
+    )
+    version: int = 1  # increments per checklist item re-upload
+    original_filename: str
+    content_type: str = "application/pdf"
+    size_bytes: int = 0
+    sha256: str = ""
+    storage_key: str = ""
+    uploaded_by: str = Field(foreign_key="users.id")
+    uploaded_at: datetime = Field(default_factory=_now)
+
+
+class ExtractionJob(SQLModel, table=True):
+    __tablename__ = "extraction_jobs"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    organization_id: str = Field(foreign_key="organizations.id", index=True)
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
+    file_id: str = Field(foreign_key="uploaded_files.id", index=True)
+    checklist_item_id: str | None = Field(default=None, foreign_key="document_checklist_items.id")
+    status: ExtractionJobStatus = Field(default=ExtractionJobStatus.pending, index=True)
+    document_type: DocumentType | None = None
+    classification_confidence: float | None = None
+    provider: str = ""
+    model_name: str = ""
+    schema_version: str = ""
+    error_message: str = ""
+    created_by: str = Field(foreign_key="users.id")
+    created_at: datetime = Field(default_factory=_now)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+class ExtractedField(SQLModel, table=True):
+    """Immutable raw AI output with source evidence. Never edited after insert."""
+
+    __tablename__ = "extracted_fields"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    job_id: str = Field(foreign_key="extraction_jobs.id", index=True)
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
+    field_key: str = Field(index=True)
+    label: str
+    group: str = ""  # e.g. property | parties | terms | deadlines | hoa | items
+    value: str | None = None
+    normalized_value: str | None = None  # ISO date / integer string where parseable
+    value_type: str = "text"  # text | date | money | number | list | bool
+    confidence: float | None = None
     source_page: int | None = None
-    source_section: str | None = None
-    linked_task_id: str | None = None
+    source_text: str = ""
+    extraction_method: str = ""
+    created_at: datetime = Field(default_factory=_now)
+
+
+class ReviewDecision(SQLModel, table=True):
+    """Append-only human decisions about an extracted field. Latest wins."""
+
+    __tablename__ = "review_decisions"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    extracted_field_id: str = Field(foreign_key="extracted_fields.id", index=True)
+    job_id: str = Field(foreign_key="extraction_jobs.id", index=True)
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
+    decision: ReviewDecisionType
+    original_value: str | None = None
+    corrected_value: str | None = None
+    reason: str = ""
+    reviewer_id: str = Field(foreign_key="users.id")
+    created_at: datetime = Field(default_factory=_now)
+
+
+class CanonicalField(SQLModel, table=True):
+    """Approved canonical transaction facts with provenance."""
+
+    __tablename__ = "canonical_fields"
+    __table_args__ = (UniqueConstraint("transaction_id", "field_key", name="uq_canonical_field"),)
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
+    field_key: str = Field(index=True)
+    label: str = ""
+    value: str = ""
+    value_type: str = "text"
+    source_field_id: str | None = Field(default=None, foreign_key="extracted_fields.id")
+    source_file_id: str | None = Field(default=None, foreign_key="uploaded_files.id")
+    approved_by: str | None = Field(default=None, foreign_key="users.id")
+    approved_at: datetime = Field(default_factory=_now)
+
+
+# --------------------------------------------------------------------------- deadlines & tasks
+
+
+class Deadline(SQLModel, table=True):
+    __tablename__ = "deadlines"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
+    deadline_key: str = Field(index=True)  # normalized, e.g. "inspection_resolution_deadline"
+    name: str
+    section_reference: str = ""  # CBS section, e.g. "§10.2"
+    due_date: dt.date | None = None
+    due_time: str = ""
+    applicability: DeadlineApplicability = Field(default=DeadlineApplicability.active)
+    source_file_id: str | None = Field(default=None, foreign_key="uploaded_files.id")
+    source_field_id: str | None = Field(default=None, foreign_key="extracted_fields.id")
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+
+class DeadlineChangeProposal(SQLModel, table=True):
+    """Reviewable diff produced by Amend/Extend (and counterproposal) documents."""
+
+    __tablename__ = "deadline_change_proposals"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
+    job_id: str = Field(foreign_key="extraction_jobs.id", index=True)
+    source_file_id: str | None = Field(default=None, foreign_key="uploaded_files.id")
+    deadline_id: str | None = Field(default=None, foreign_key="deadlines.id")
+    deadline_key: str
+    name: str
+    old_date: dt.date | None = None
+    new_date: dt.date | None = None
+    old_time: str = ""
+    new_time: str = ""
+    status: ProposalStatus = Field(default=ProposalStatus.pending, index=True)
+    decided_by: str | None = Field(default=None, foreign_key="users.id")
+    decided_at: datetime | None = None
     created_at: datetime = Field(default_factory=_now)
 
 
 class Task(SQLModel, table=True):
+    __tablename__ = "tasks"
+
     id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str = Field(foreign_key="transaction.id", index=True)
+    transaction_id: str = Field(foreign_key="transactions.id", index=True)
     title: str
-    category: str
-    status: TaskStatus = Field(default=TaskStatus.not_started)
+    status: TaskStatus = Field(default=TaskStatus.open, index=True)
     due_date: dt.date | None = None
+    linked_deadline_id: str | None = Field(default=None, foreign_key="deadlines.id")
+    source: str = "manual"  # manual | deadline | document
     completed_at: datetime | None = None
-    assigned_role: str | None = None
-    notes: str | None = None
-    not_applicable_reason: str | None = None
-    linked_deadline_id: str | None = Field(default=None, foreign_key="deadline.id")
-    source_type: str = "generated_from_deadline"
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
 
 
-class Contact(SQLModel, table=True):
+# --------------------------------------------------------------------------- audit & AI telemetry
+
+
+class AuditLog(SQLModel, table=True):
+    __tablename__ = "audit_log"
+
     id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str = Field(foreign_key="transaction.id", index=True)
-    role: str
-    name: str | None = None
-    company: str | None = None
-    email: str | None = None
-    phone: str | None = None
-    license_number: str | None = None
-    address: str | None = None
-    notes: str | None = None
-    required: bool = True
-    complete: bool = False
-    source: str = "contract_extraction"
-    created_at: datetime = Field(default_factory=_now)
-    updated_at: datetime = Field(default_factory=_now)
-
-
-class DocumentRequirement(SQLModel, table=True):
-    __tablename__ = "document_requirements"
-    id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str = Field(foreign_key="transaction.id", index=True)
-    document_name: str
-    category: str
-    purpose: str | None = None
-    required_status: RequiredStatus = Field(default=RequiredStatus.required)
-    received_status: ReceivedStatus = Field(default=ReceivedStatus.missing)
-    source_document_id: str | None = Field(default=None, foreign_key="source_documents.id")
-    due_date: dt.date | None = None
-    notes: str | None = None
-    created_at: datetime = Field(default_factory=_now)
-    updated_at: datetime = Field(default_factory=_now)
-
-
-class PostCloseTask(SQLModel, table=True):
-    __tablename__ = "post_close_tasks"
-    id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str = Field(foreign_key="transaction.id", index=True)
-    title: str
-    recipient_role: str | None = None
-    status: TaskStatus = Field(default=TaskStatus.not_started)
-    date_sent: dt.date | None = None
-    date_completed: dt.date | None = None
-    notes: str | None = None
-    created_at: datetime = Field(default_factory=_now)
-    updated_at: datetime = Field(default_factory=_now)
-
-
-class AuditEvent(SQLModel, table=True):
-    __tablename__ = "audit_events"
-    id: str = Field(default_factory=_uuid, primary_key=True)
-    transaction_id: str | None = Field(default=None, foreign_key="transaction.id", index=True)
-    actor_type: str = "system"
-    actor_id: str | None = None
-    event_type: str
-    entity_type: str
+    organization_id: str = Field(foreign_key="organizations.id", index=True)
+    transaction_id: str | None = Field(default=None, foreign_key="transactions.id", index=True)
+    actor_type: ActorType = Field(default=ActorType.user)
+    actor_id: str | None = Field(default=None, foreign_key="users.id")
+    event_type: str = Field(index=True)
+    entity_type: str = ""
     entity_id: str | None = None
-    before_value: str | None = None
-    after_value: str | None = None
-    created_at: datetime = Field(default_factory=_now)
+    old_value: str | None = None
+    new_value: str | None = None
+    source_file_id: str | None = Field(default=None, foreign_key="uploaded_files.id")
     metadata_json: str | None = None
+    created_at: datetime = Field(default_factory=_now, index=True)
 
-# Compatibility aliases for legacy route names/tests.
-Document = SourceDocument
-ExtractionJob = ExtractionRun
+
+class AIModelRun(SQLModel, table=True):
+    __tablename__ = "ai_model_runs"
+
+    id: str = Field(default_factory=_uuid, primary_key=True)
+    job_id: str = Field(foreign_key="extraction_jobs.id", index=True)
+    provider: str = ""
+    model_name: str = ""
+    request_kind: str = ""  # classify | extract
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    latency_ms: int | None = None
+    success: bool = True
+    error_message: str = ""
+    created_at: datetime = Field(default_factory=_now)

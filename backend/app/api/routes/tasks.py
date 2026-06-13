@@ -1,60 +1,91 @@
-from datetime import datetime, timezone
+"""Tasks: manual creation and status updates (open / done / not_applicable)."""
+from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+import datetime as dt
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 
-from app.api.deps import get_current_user, get_session
-from app.models import AuditEvent, PostCloseTask, Task, TaskStatus, User
-from app.schemas import PostCloseTaskOut, TaskOut, TaskPatch
-from app.services.transaction_service import _task_out
+from app.api.deps import AuthContext, get_current_context, get_owned_transaction
+from app.db.session import get_session
+from app.models import Task, TaskStatus
+from app.schemas import TaskCreate, TaskOut, TaskPatch
+from app.services.audit import record as audit
 
-router = APIRouter(prefix="/tasks", tags=["tasks"])
-
-
-def _resolve_status(value: str | None) -> TaskStatus:
-    legacy = {"todo": "not_started", "doing": "in_progress", "done": "complete", "na": "not_applicable"}
-    try:
-        return TaskStatus(legacy.get(value or "", value or ""))
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid task state '{value}'")
+router = APIRouter(tags=["tasks"])
 
 
-@router.patch("/{task_id}", response_model=TaskOut | PostCloseTaskOut)
-def patch_task(task_id: str, patch: TaskPatch, user: User = Depends(get_current_user), session: Session = Depends(get_session)):
-    now = datetime.now(timezone.utc)
-    value = patch.status or patch.state
-    new_status = _resolve_status(value)
+@router.post(
+    "/transactions/{transaction_id}/tasks",
+    response_model=TaskOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_task(
+    transaction_id: str,
+    body: TaskCreate,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> TaskOut:
+    tx = get_owned_transaction(transaction_id, ctx, session)
+    task = Task(
+        transaction_id=tx.id,
+        title=body.title,
+        due_date=body.due_date,
+        source="manual",
+    )
+    session.add(task)
+    audit(
+        session,
+        organization_id=ctx.organization_id,
+        transaction_id=tx.id,
+        actor_id=ctx.user.id,
+        event_type="task_created",
+        entity_type="task",
+        entity_id=task.id,
+        new_value=task.title,
+    )
+    session.commit()
+    session.refresh(task)
+    return TaskOut.model_validate(task)
 
-    # Regular task
+
+@router.patch("/tasks/{task_id}", response_model=TaskOut)
+def patch_task(
+    task_id: str,
+    body: TaskPatch,
+    ctx: AuthContext = Depends(get_current_context),
+    session: Session = Depends(get_session),
+) -> TaskOut:
     task = session.get(Task, task_id)
-    if task:
-        before = task.status.value
-        task.status = new_status
-        task.notes = patch.notes if patch.notes is not None else task.notes
-        task.updated_at = now
-        if new_status == TaskStatus.complete:
-            task.completed_at = now
-        event_type = ("task_completed" if new_status == TaskStatus.complete
-                      else "task_marked_not_applicable" if new_status == TaskStatus.not_applicable
-        else "task_updated")
-        session.add(task)
-        session.add(AuditEvent(transaction_id=task.transaction_id, actor_type="user", actor_id=user.id,
-                               event_type=event_type, entity_type="task", entity_id=task.id,
-                               before_value=before, after_value=new_status.value))
-        session.commit()
-        session.refresh(task)
-        return _task_out(task)
+    if task is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found")
+    # Org scoping via the parent transaction.
+    get_owned_transaction(task.transaction_id, ctx, session)
 
-    # Post-close task
-    pc_task = session.get(PostCloseTask, task_id)
-    if pc_task:
-        pc_task.status = new_status
-        pc_task.updated_at = now
-        if new_status == TaskStatus.complete:
-            pc_task.date_completed = now.date()
-        session.add(pc_task)
-        session.commit()
-        session.refresh(pc_task)
-        return PostCloseTaskOut.model_validate(pc_task.model_dump())
+    if body.status is None:
+        raise HTTPException(422, "status is required")
+    try:
+        new_status = TaskStatus(body.status)
+    except ValueError:
+        raise HTTPException(422, f"Invalid task status '{body.status}'")
 
-    raise HTTPException(status_code=404, detail="Task not found")
+    old_status = task.status.value
+    now = dt.datetime.now(dt.timezone.utc)
+    task.status = new_status
+    task.completed_at = now if new_status == TaskStatus.done else None
+    task.updated_at = now
+    session.add(task)
+    audit(
+        session,
+        organization_id=ctx.organization_id,
+        transaction_id=task.transaction_id,
+        actor_id=ctx.user.id,
+        event_type="task_status_changed",
+        entity_type="task",
+        entity_id=task.id,
+        old_value=old_status,
+        new_value=new_status.value,
+    )
+    session.commit()
+    session.refresh(task)
+    return TaskOut.model_validate(task)

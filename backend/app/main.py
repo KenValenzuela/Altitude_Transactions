@@ -9,7 +9,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.routes import auth, contacts, documents, extractions, fields, health, tasks, transactions
+from app.api.routes import (
+    admin,
+    auth,
+    contacts,
+    dashboard,
+    extractions,
+    files,
+    health,
+    review,
+    tasks,
+    transactions,
+)
 from app.core.config import settings
 from app.db.seed import seed_initial_data
 from app.db.session import init_db
@@ -33,9 +44,6 @@ app.add_middleware(
 )
 
 
-# --- Consistent error response shape: {"detail": "..."} --------------------
-
-
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
@@ -46,14 +54,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 
-# --- Routers (all under /api) ----------------------------------------------
-
 api_prefix = "/api"
 app.include_router(health.router, prefix=api_prefix)
 app.include_router(auth.router, prefix=api_prefix)
 app.include_router(transactions.router, prefix=api_prefix)
-app.include_router(documents.router, prefix=api_prefix)
+app.include_router(files.router, prefix=api_prefix)
 app.include_router(extractions.router, prefix=api_prefix)
-app.include_router(tasks.router, prefix=api_prefix)
-app.include_router(fields.router, prefix=api_prefix)
+app.include_router(review.router, prefix=api_prefix)
 app.include_router(contacts.router, prefix=api_prefix)
+app.include_router(tasks.router, prefix=api_prefix)
+app.include_router(dashboard.router, prefix=api_prefix)
+app.include_router(admin.router, prefix=api_prefix)
